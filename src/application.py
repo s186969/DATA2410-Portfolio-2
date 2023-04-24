@@ -67,7 +67,7 @@ def start_server(args):
     port_number = args.port
 
     # Creates a UDP socket
-    with socket(AF_INET, SOCK_STREAM) as server_socket:
+    with socket(AF_INET, SOCK_DGRAM) as server_socket:
 
         # Bind socket to the server
         server_socket.bind((ip_address, port_number))
@@ -88,7 +88,7 @@ def start_client(args):
     port_number = args.port
 
     # Create a UDP socket
-    client_socket = socket(AF_INET, SOCK_STREAM)
+    client_socket = socket(AF_INET, SOCK_DGRAM)
 
 
 # This is the main entry point of the program

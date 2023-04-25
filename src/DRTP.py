@@ -9,24 +9,34 @@ from application import *
 # Three way handshake
 def handshake_client(client_socket): 
 
-    # Client mottar data fra server
-    tuple = client_socket.recvfrom(1472)
-    while tuple:
-        data = tuple[0]
-        address = tuple[1]
+    # Client starter med å sende SYN
+    SYN_packet = create_packet(0, 0, 8, 64000, b'')
+    client_socket.send(SYN_packet)
+    print('Her sender clienten SYN')
+    client_socket.settimeout(0.5) # Sjekk om tiden skal være like lang her
+    try: 
 
-        # Sjekke pakkens header
-        header_from_data = data[:12]
-        seq, ack, flags, win = parse_header (header_from_data)
-        syn, ack, fin = parse_flags(flags)
-        #print(f'Dette er det jeg vil se på: Syn: {syn} Ack: {ack} fin: {fin}')
+        # Client mottar data fra server
+        tuple = client_socket.recvfrom(1472)
+        while tuple:
+            data = tuple[0]
+            address = tuple[1]
 
-        # Hvis header har aktivert SYN-ACK flagg
-        if flags == 12:
-            ACK_packet = create_packet(0, 0, 4, 64000, b'')
-            client_socket.send(ACK_packet)
-            print('Nå har clienten sendt ACK')
-            return
+            # Sjekke pakkens header
+            header_from_data = data[:12]
+            seq, ack, flags, win = parse_header (header_from_data)
+            syn, ack, fin = parse_flags(flags)
+            #print(f'Dette er det jeg vil se på: Syn: {syn} Ack: {ack} fin: {fin}')
+
+            # Hvis header har aktivert SYN-ACK flagg
+            if flags == 12:
+                ACK_packet = create_packet(0, 0, 4, 64000, b'')
+                client_socket.send(ACK_packet)
+                print('Nå har clienten sendt ACK')
+                return
+            
+    except:
+        print('Connection timeout')
 
 
 def handshake_server(flags, server_socket, address):

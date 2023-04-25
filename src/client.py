@@ -20,10 +20,11 @@ def start_client(args):
     send_data(client_socket)
 
 def send_data(client_socket):
+    # Leser bildet oslomet.jpg og sender dette til server
     with open('oslomet.jpg', 'rb') as f: #FLAGG
         image_data = f.read()
-        data_length = len(image_data)
-        print(f'Størrelsen til bildet er: {data_length}')
+        data_length = len(image_data) #debug 
+        print(f'Størrelsen til bildet er: {data_length}') #debug
     client_socket.send(image_data)
 
 # En funksjon for å lage datapakker med header?

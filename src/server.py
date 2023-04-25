@@ -4,8 +4,7 @@ from drtp import *
 from header import *
 
 def receive_data(data):
-    print(f"{data}")
-
+    # Skriver data mottatt til filen received_image.jpg
     with open('received_image.jpg', 'wb') as f:
         f.write(data)
 

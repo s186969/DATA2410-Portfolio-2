@@ -2,11 +2,14 @@ from socket import *
 from header import *
 from client import *
 from server import *
-from DRTP import *
+from drtp import *
 import argparse
 import sys
 import threading
 import ipaddress
+
+# TO DO:
+# Lage lese-pakke-funksjon
 
 # This function will parse the command-line arguments and perform basic error checking
 def parse_args():
@@ -84,20 +87,19 @@ def start_server(args):
             #client_message, client_address = server_socket.recvfrom(1472)
             tuple = server_socket.recvfrom(1472)
             data = tuple[0]
-            print(f'Mottatt data: {data}, LENGDE: {len(data)}')
+            address = tuple[1]
+
+            # Sjekke pakkens header
             header_from_data = data[:12]
-            print(f'HER ER HEADER: {header_from_data} LENGDE {len(header_from_data)}')
             seq, ack, flags, win = parse_header (header_from_data)
             syn, ack, fin = parse_flags(flags)
             print(f'Dette er det jeg vil se på: Syn: {syn} Ack: {ack} fin: {fin}')
 
-            if(flags == 8):
-                #Her har vi mottatt SYN-flagg
-                #Opprett en pakke med SYN-ACK 
-                #Send pakken tilbake til client
+            if seq == 0 and ack == 0:
+                a = handshake_server(flags, server_socket, address)
             
-            if(flags == 12):
-                
+
+
             
             
 
@@ -117,20 +119,27 @@ def start_client(args):
     #connection = handshake_client(client_socket)
 
     # Sende SYN
-    sequence_number = 0
-    acknowledgment_number = 0
-    window = 64000 # window value should always be sent from the receiver-side
-    flags = 8 # we are not going to set any flags when we send a data packet
-    data = b'' # we are not sending data when we want to connect
-    
-    #msg now holds a packet, including our custom header and data
-    SYN_packet = create_packet(sequence_number, acknowledgment_number, flags, window, data)
-    print(f'Lengden til pakken er: {len(SYN_packet)}')
 
+    SYN_packet = create_packet(0, 0, 8, 64000, b'')
     client_socket.send(SYN_packet)
 
+    #Handshake - mottar syn-ack
+    tuple = client_socket.recvfrom(1472)
+    data = tuple[0]
+    address = tuple[1]
 
+    # Sjekke pakkens header
+    header_from_data = data[:12]
+    seq, ack, flags, win = parse_header (header_from_data)
+    syn, ack, fin = parse_flags(flags)
+    print(f'Dette er det jeg vil se på: Syn: {syn} Ack: {ack} fin: {fin}')
 
+    if flags == 12:
+        ACK_packet = create_packet(0, 0, 4, 64000, b'')
+        client_socket.send(ACK_packet)
+        print(f'Nå har vi sendt ACK {ACK_packet}')
+
+    client_socket.send(SYN_packet)
 
 
 

@@ -47,7 +47,7 @@ def parse_flags(flags):
     ack = flags & (1 << 2)
     fin = flags & (1 << 1)
     return syn, ack, fin
-
+'''
 #now let's create a packet with sequence number 1
 print ('\n\ncreating a packet')
 
@@ -107,3 +107,4 @@ print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 #now let's parse the flag field
 syn, ack, fin = parse_flags(flags)
 print (f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
+'''

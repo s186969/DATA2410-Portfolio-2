@@ -26,6 +26,12 @@ def parse_args():
     # '-p' flag: Sets the port number that the server will listen on or the client will connect to. The default value is 8088
     parser.add_argument('-p', '--port', type = int, default = 8088, help = "Selects the port number")
 
+    # '-f' flag: Sets the file to be transfered in the client.
+    parser.add_argument('-f', '--filename', type = str, help = "Selects the file to be transfered")
+
+    # '-r' flag: Sets the reliable method for the transfer
+    parser.add_argument('-r', '--reliablemethod', type = str, help = "Selects a reliable method for the transfer. Choose either saw (Stop and Wait), gbn (Go-Back-N) or sr (Selective-Repeat)")
+    
     # Parsing the command-line arguments
     args = parser.parse_args()
 
@@ -60,6 +66,11 @@ def validate_args(args):
     # Checks if the port number for the '-p' flag is between 1024 and 65535
     if args.port < 1024 or args.port > 65535:
         sys.exit("Error: Invalid value for '-p' flag. The port must be an integer in the range [1024, 65535]")
+
+    # Checks if the format for the '-r' flag is correct
+    if args.reliablemethod not in ["saw", "gbn", "sr"]:
+        sys.exit("Error: Invalid value for '-r' flag. Format must be either saw, gbn or sr")
+
               
 # This is the main entry point of the program
 if __name__ == '__main__':

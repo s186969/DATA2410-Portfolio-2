@@ -11,17 +11,20 @@ def start_client(args):
     # Defining the port number using the '-p' flag
     port_number = args.port
 
+    # Defining the file name using the '-f' flag
+    file_name = args.filename
+
     # Create a UDP socket
     client_socket = socket(AF_INET, SOCK_DGRAM)
     client_socket.connect((ip_address, port_number))
 
     handshake = handshake_client(client_socket)
 
-    send_data(client_socket)
+    send_data(client_socket, file_name)
 
-def send_data(client_socket):
+def send_data(client_socket, file_name):
     # Leser bildet oslomet.jpg og sender dette til server
-    with open('oslomet.jpg', 'rb') as f: #FLAGG
+    with open(file_name, 'rb') as f: #FLAGG
         image_data = f.read()
         data_length = len(image_data) #debug 
         print(f'Størrelsen til bildet er: {data_length}') #debug

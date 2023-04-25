@@ -1,4 +1,8 @@
 from socket import *
+from header import *
+from client import *
+from server import *
+from DRTP import *
 import argparse
 import sys
 import threading
@@ -77,7 +81,25 @@ def start_server(args):
 
         while True:
             # Receiving a message from a client
-            client_message, client_address = server_socket.recvfrom(2048)
+            #client_message, client_address = server_socket.recvfrom(1472)
+            tuple = server_socket.recvfrom(1472)
+            data = tuple[0]
+            print(f'Mottatt data: {data}, LENGDE: {len(data)}')
+            header_from_data = data[:12]
+            print(f'HER ER HEADER: {header_from_data} LENGDE {len(header_from_data)}')
+            seq, ack, flags, win = parse_header (header_from_data)
+            syn, ack, fin = parse_flags(flags)
+            print(f'Dette er det jeg vil se på: Syn: {syn} Ack: {ack} fin: {fin}')
+
+            if(flags == 8):
+                #Her har vi mottatt SYN-flagg
+                #Opprett en pakke med SYN-ACK 
+                #Send pakken tilbake til client
+            
+            if(flags == 12):
+                
+            
+            
 
 
 def start_client(args):
@@ -89,6 +111,27 @@ def start_client(args):
 
     # Create a UDP socket
     client_socket = socket(AF_INET, SOCK_DGRAM)
+    client_socket.connect((ip_address, port_number))
+
+    # Three way handshake
+    #connection = handshake_client(client_socket)
+
+    # Sende SYN
+    sequence_number = 0
+    acknowledgment_number = 0
+    window = 64000 # window value should always be sent from the receiver-side
+    flags = 8 # we are not going to set any flags when we send a data packet
+    data = b'' # we are not sending data when we want to connect
+    
+    #msg now holds a packet, including our custom header and data
+    SYN_packet = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+    print(f'Lengden til pakken er: {len(SYN_packet)}')
+
+    client_socket.send(SYN_packet)
+
+
+
+
 
 
 # This is the main entry point of the program

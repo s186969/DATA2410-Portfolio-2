@@ -3,7 +3,7 @@
     #flags and receiver window) and applicaton data (1460 bytes), and 2) to parse
     # the extracted header from the application data. 
 '''
-
+# 
 from struct import *
 
 
@@ -22,7 +22,7 @@ def create_packet(seq, ack, flags, win, data):
     #flags (we only use 4 bits),  receiver window and application data 
     #struct.pack returns a bytes object containing the header values
     #packed according to the header_format !IIHH
-    header = pack (header_format, seq, ack, flags, win)
+    header = pack (header_format, seq, ack, flags, win) #header is now bytes
 
     #once we create a header, we add the application data to create a packet
     #of 1472 bytes

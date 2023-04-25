@@ -93,7 +93,7 @@ def start_server(args):
             header_from_data = data[:12]
             seq, ack, flags, win = parse_header (header_from_data)
             syn, ack, fin = parse_flags(flags)
-            print(f'Dette er det jeg vil se på: Syn: {syn} Ack: {ack} fin: {fin}')
+            #print(f'Dette er det jeg vil se på: Syn: {syn} Ack: {ack} fin: {fin}')
 
             if seq == 0 and ack == 0:
                 a = handshake_server(flags, server_socket, address)
@@ -102,7 +102,7 @@ def start_server(args):
 
             
             
-
+### DETTE SKAL TIL CLIENT.PY ###
 
 def start_client(args):
     # Defining the IP address using the '-I' flag
@@ -115,32 +115,14 @@ def start_client(args):
     client_socket = socket(AF_INET, SOCK_DGRAM)
     client_socket.connect((ip_address, port_number))
 
-    # Three way handshake
-    #connection = handshake_client(client_socket)
-
-    # Sende SYN
-
+    # Client starter med å sende SYN
     SYN_packet = create_packet(0, 0, 8, 64000, b'')
     client_socket.send(SYN_packet)
+    print('Her sender clienten SYN')
 
-    #Handshake - mottar syn-ack
-    tuple = client_socket.recvfrom(1472)
-    data = tuple[0]
-    address = tuple[1]
+    handshake = handshake_client(client_socket)
 
-    # Sjekke pakkens header
-    header_from_data = data[:12]
-    seq, ack, flags, win = parse_header (header_from_data)
-    syn, ack, fin = parse_flags(flags)
-    print(f'Dette er det jeg vil se på: Syn: {syn} Ack: {ack} fin: {fin}')
-
-    if flags == 12:
-        ACK_packet = create_packet(0, 0, 4, 64000, b'')
-        client_socket.send(ACK_packet)
-        print(f'Nå har vi sendt ACK {ACK_packet}')
-
-    client_socket.send(SYN_packet)
-
+    #def send_data():
 
 
 # This is the main entry point of the program

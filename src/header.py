@@ -27,7 +27,7 @@ def create_packet(seq, ack, flags, win, data):
     #once we create a header, we add the application data to create a packet
     #of 1472 bytes
     packet = header + data
-    print (f'packet containing header + data of size {len(packet)}') #just to show the length of the packet
+    #print (f'packet containing header + data of size {len(packet)}') #just to show the length of the packet
     return packet
 
 

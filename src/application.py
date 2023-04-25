@@ -115,11 +115,6 @@ def start_client(args):
     client_socket = socket(AF_INET, SOCK_DGRAM)
     client_socket.connect((ip_address, port_number))
 
-    # Client starter med å sende SYN
-    SYN_packet = create_packet(0, 0, 8, 64000, b'')
-    client_socket.send(SYN_packet)
-    print('Her sender clienten SYN')
-
     handshake = handshake_client(client_socket)
 
     #def send_data():

@@ -1,3 +1,47 @@
+from socket import *
+from application import *
+from drtp import *
+from header import *
+
+def receive_data(data):
+    print(f"{data}")
+
+    with open('received_image.jpg', 'wb') as f:
+        f.write(data)
+
+def start_server(args):
+    # Defining the IP address using the '-b' flag
+    ip_address = args.bind
+    
+    # Defining the port number using the '-p' flag
+    port_number = args.port
+
+    # Creates a UDP socket
+    with socket(AF_INET, SOCK_DGRAM) as server_socket:
+
+        # Bind socket to the server
+        server_socket.bind((ip_address, port_number))
+
+        # Prints a message that the server is ready to receive
+        print(f"The server is ready to receive")
+
+        while True:
+            # Receiving a message from a client
+            tuple = server_socket.recvfrom(1472)
+            data = tuple[0]
+            address = tuple[1]
+
+            # Sjekke pakkens header
+            seq, ack, flags = read_header(data)
+
+            # Establish connection if seq and ack is 0
+            if seq == 0 and ack == 0:
+                handshake_server(flags, server_socket, address)
+            
+            # Herfra er mottak av data
+            receive_data(data)
+  
+
 
 # Stop and wait
     # wait for packet

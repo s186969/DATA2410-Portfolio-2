@@ -1,4 +1,3 @@
-from socket import *
 from header import *
 from client import *
 from server import *
@@ -7,9 +6,6 @@ import argparse
 import sys
 import threading
 import ipaddress
-
-# TO DO:
-# Lage lese-pakke-funksjon
 
 # This function will parse the command-line arguments and perform basic error checking
 def parse_args():
@@ -64,62 +60,7 @@ def validate_args(args):
     # Checks if the port number for the '-p' flag is between 1024 and 65535
     if args.port < 1024 or args.port > 65535:
         sys.exit("Error: Invalid value for '-p' flag. The port must be an integer in the range [1024, 65535]")
-    
-
-def start_server(args):
-    # Defining the IP address using the '-b' flag
-    ip_address = args.bind
-    
-    # Defining the port number using the '-p' flag
-    port_number = args.port
-
-    # Creates a UDP socket
-    with socket(AF_INET, SOCK_DGRAM) as server_socket:
-
-        # Bind socket to the server
-        server_socket.bind((ip_address, port_number))
-
-        # Prints a message that the server is ready to receive
-        print(f"The server is ready to receive")
-
-        while True:
-            # Receiving a message from a client
-            #client_message, client_address = server_socket.recvfrom(1472)
-            tuple = server_socket.recvfrom(1472)
-            data = tuple[0]
-            address = tuple[1]
-
-            # Sjekke pakkens header
-            header_from_data = data[:12]
-            seq, ack, flags, win = parse_header (header_from_data)
-            syn, ack, fin = parse_flags(flags)
-            #print(f'Dette er det jeg vil se på: Syn: {syn} Ack: {ack} fin: {fin}')
-
-            if seq == 0 and ack == 0:
-                a = handshake_server(flags, server_socket, address)
-            
-
-
-            
-            
-### DETTE SKAL TIL CLIENT.PY ###
-
-def start_client(args):
-    # Defining the IP address using the '-I' flag
-    ip_address = args.serverip
-
-    # Defining the port number using the '-p' flag
-    port_number = args.port
-
-    # Create a UDP socket
-    client_socket = socket(AF_INET, SOCK_DGRAM)
-    client_socket.connect((ip_address, port_number))
-
-    handshake = handshake_client(client_socket)
-
-    #def send_data():
-
-
+              
 # This is the main entry point of the program
 if __name__ == '__main__':
     # Parses the command line arguments using the argparse module

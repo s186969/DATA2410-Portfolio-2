@@ -8,25 +8,20 @@ from application import *
 
 # Three way handshake
 def handshake_client(client_socket): 
-
     # Client starter med å sende SYN
     SYN_packet = create_packet(0, 0, 8, 64000, b'')
     client_socket.send(SYN_packet)
     print('Her sender clienten SYN')
+
     client_socket.settimeout(0.5) # Sjekk om tiden skal være like lang her
+    
     try: 
-
         # Client mottar data fra server
-        tuple = client_socket.recvfrom(1472)
-        while tuple:
-            data = tuple[0]
-            address = tuple[1]
-
+        data = client_socket.recvfrom(1472)[0]
+        
+        while data:
             # Sjekke pakkens header
-            header_from_data = data[:12]
-            seq, ack, flags, win = parse_header (header_from_data)
-            syn, ack, fin = parse_flags(flags)
-            #print(f'Dette er det jeg vil se på: Syn: {syn} Ack: {ack} fin: {fin}')
+            seq, ack, flags = read_header(data)
 
             # Hvis header har aktivert SYN-ACK flagg
             if flags == 12:
@@ -45,7 +40,16 @@ def handshake_server(flags, server_socket, address):
         # Lager en SYN ACK pakke
         SYN_ACK_packet = create_packet(0, 0, 12, 64000, b'')
         server_socket.sendto(SYN_ACK_packet, address)
-        print('Nå har vi server sendt SYN ACK')
+        print('Nå har server sendt SYN ACK')
+    
+    if flags == 4:
+        # Server mottar ACK fra klient og er da klar for å motta datapakker
+        return
+        
+def read_header(data):
+    header_from_data = data[:12]
+    seq, ack, flags, win = parse_header (header_from_data)
+    return seq, ack, flags
 
 
 # Gracefully close when the transfer is finished

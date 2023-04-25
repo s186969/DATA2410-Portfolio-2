@@ -1,3 +1,30 @@
+from application import *
+from drtp import *
+from header import *
+from socket import *
+
+# Starte en klient
+def start_client(args):
+    # Defining the IP address using the '-I' flag
+    ip_address = args.serverip
+
+    # Defining the port number using the '-p' flag
+    port_number = args.port
+
+    # Create a UDP socket
+    client_socket = socket(AF_INET, SOCK_DGRAM)
+    client_socket.connect((ip_address, port_number))
+
+    handshake = handshake_client(client_socket)
+
+    send_data(client_socket)
+
+def send_data(client_socket):
+    with open('oslomet.jpg', 'rb') as f: #FLAGG
+        image_data = f.read()
+        data_length = len(image_data)
+        print(f'Størrelsen til bildet er: {data_length}')
+    client_socket.send(image_data)
 
 # En funksjon for å lage datapakker med header?
 
@@ -5,7 +32,6 @@
 
 # En funksjon for å motta data (ack)
     # Hvis en pakke ikke inneholder noe data, så er den en "ACK")
-
 
 # Stop and wait funksjon:
     # sender pakke og venter på ack fra server

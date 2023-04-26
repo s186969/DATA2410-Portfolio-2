@@ -3,6 +3,7 @@ from drtp import *
 from header import *
 from socket import *
 import sys
+import time
 
 # Starte en klient
 def start_client(args):
@@ -18,6 +19,9 @@ def start_client(args):
     # Create a UDP socket
     client_socket = socket(AF_INET, SOCK_DGRAM)
     client_socket.connect((ip_address, port_number))
+
+    # Defining the 4RTT to be used in timeout
+    four_rrt = 4 * round_trip_time(client_socket, ip_address, port_number)
 
     handshake = handshake_client(client_socket)
 
@@ -114,9 +118,32 @@ def send_data(client_socket, file_name):
     print('Nå har clienten sendt FIN - sending ferdig')
 
     sys.exit()
-        
+      
+# This function calculates the round-trip time between the client and the server
+def round_trip_time(client_socket, ip_address, port_number):
+    # Defining the packet to be used to estimate RTT
+    send_ping = b'PING' + (b'0' * 1468)
 
+    # Initial time
+    start_time = time.time()
 
+    # Sends a packet to server to estimate RTT
+    client_socket.sendto(send_ping, (ip_address, port_number))
+
+    # Defining the packet when the clients get replied
+    receive_ping, address = client_socket.recvfrom(1472)
+
+    # Ending time
+    end_time = time.time()
+    
+    # Calculating the RTT
+    round_trip_time = end_time - start_time
+
+    # Debugging message
+    print(f"RTT: {round_trip_time} seconds")
+
+    # Returns the RTT in seconds
+    return round_trip_time
 
 # Stop and wait funksjon:
     # sender pakke og venter på ack fra server

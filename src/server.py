@@ -3,10 +3,8 @@ from application import *
 from drtp import *
 from header import *
 
-def receive_data(data, file_name):
-    # Skriver data mottatt til filen received_image.jpg
-    with open(file_name, 'wb') as f:
-        f.write(data)
+#def receive_data(data, file_name):
+
 
 def start_server(args):
     # Defining the IP address using the '-i' flag
@@ -27,6 +25,7 @@ def start_server(args):
         # Prints a message that the server is ready to receive
         print(f"The server is ready to receive")
 
+        received_data = b''
         while True:
             # Receiving a message from a client
             tuple = server_socket.recvfrom(1472)
@@ -41,8 +40,25 @@ def start_server(args):
                 handshake_server(flags, server_socket, address)
             
             # Herfra er mottak av data
+<<<<<<< Updated upstream
             receive_data(data, file_name)
   
+=======
+
+            # Skriver data mottatt til filen received_image.jpg
+            header_from_data = data[:12]        
+            data_to_keep = data[12:]
+            received_data += data_to_keep
+
+            seq, ack, flags, win = parse_header (header_from_data)
+
+            if flags == 2:
+                print('Mottatt FIN flagg fra clienten, mottar ikke mer data')
+                # Når FIN flagg er mottatt skriver vi dataen til filen. 
+                with open(file_name, 'wb') as f:
+                    f.write(received_data)
+
+>>>>>>> Stashed changes
 # Stop and wait
     # wait for packet
     # If packet is OK, send ACK

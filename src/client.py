@@ -56,6 +56,11 @@ def send_data(client_socket, file_name):
         seq += 1
         print(f'Antall bytes sent: {number_of_data_sent}')
     
+    # Sende et FIN flagg
+    FIN_packet = create_packet(0, 0, 2, 64000, b'')
+    client_socket.send(FIN_packet)
+    print('Nå har clienten sendt FIN - sending ferdig')
+
     sys.exit()
         
 

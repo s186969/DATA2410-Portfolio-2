@@ -62,11 +62,11 @@ def validate_args(args):
         sys.exit("Error: Invalid value for '-p' flag. The port must be an integer in the range [1024, 65535]")
 
     # Checks if the format for the '-r' flag is correct
-    if args.reliablemethod not in ["saw", "gbn", "sr"]:
+    if args.reliablemethod is not None and args.reliablemethod not in ["saw", "gbn", "sr"]:
         sys.exit("Error: Invalid value for '-r' flag. Format must be either saw, gbn or sr")
 
     # Chekcs if the format for the '-t' flag is correct
-    if args.testcase not in ["skip_ack", "loss"]:
+    if args.testcase is not None and args.reliablemethod not in ["skip_ack", "loss"]:
         sys.exit("Error: Invalid value for '-t' flag. Format must be either skip_ack or loss")
               
 # This is the main entry point of the program

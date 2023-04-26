@@ -40,10 +40,6 @@ def start_server(args):
                 handshake_server(flags, server_socket, address)
             
             # Herfra er mottak av data
-<<<<<<< Updated upstream
-            receive_data(data, file_name)
-  
-=======
 
             # Skriver data mottatt til filen received_image.jpg
             header_from_data = data[:12]        
@@ -58,7 +54,6 @@ def start_server(args):
                 with open(file_name, 'wb') as f:
                     f.write(received_data)
 
->>>>>>> Stashed changes
 # Stop and wait
     # wait for packet
     # If packet is OK, send ACK

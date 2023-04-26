@@ -4,7 +4,6 @@ from header import *
 from socket import *
 import sys
 
-
 # Starte en klient
 def start_client(args):
     # Defining the IP address using the '-i' flag
@@ -30,10 +29,81 @@ def start_client(args):
 
     # elif args.reliablemethod == 'gbn':
 
-    # elif args.reliablemethod == 'sr':
+    elif args.reliablemethod == 'sr':
+        selective_repeat(client_socket, file_name, seq, ack)
 
     else:
         send_data(client_socket, file_name)
+
+def selective_repeat(client_socket, file_name, seq_client, ack_client):
+    # Set up variables
+    window_size = 5
+    window_start = seq_client
+    window_end = window_start + window_size
+    data_sent = (seq_client - 1) * 1460
+    packets_in_buffer = {}
+    last_ack_received = seq_client - 1
+
+    # Read file and send packets
+    with open(file_name, 'rb') as f:
+        image_data = f.read()
+        data_length = len(image_data)
+
+        while data_sent < data_length:
+            # Send packets in window
+            for seq_client in range(window_start, window_end):
+                if seq_client not in packets_in_buffer:
+                    # Get data for packet
+                    packet_start = (seq_client - 1) * 1460
+                    packet_stop = min(packet_start + 1460, data_length)
+                    data = image_data[packet_start:packet_stop]
+
+                    # Create packet and send
+                    packet = create_packet(seq_client, ack_client, 0, 64000, data)
+                    client_socket.send(packet)
+                    print('Sending packet:', seq_client)
+
+                    # Add packet to buffer
+                    packets_in_buffer[seq_client] = data
+
+            # Wait for acks and handle them
+            try:
+                client_socket.settimeout(0.5)
+                receive = client_socket.recv(1472)
+                seq, ack, flags = read_header(receive)
+                print('Received ack:', ack)
+
+                # Update window and buffer
+                if ack > last_ack_received:
+                    num_acks_received = ack - last_ack_received
+                    for i in range(num_acks_received):
+                        # Remove packet from buffer
+                        packets_in_buffer.pop(window_start + i)
+
+                    # Update window
+                    last_ack_received = ack
+                    window_start = last_ack_received + 1
+                    window_end = window_start + window_size
+
+                    # Update data sent
+                    data_sent = last_ack_received * 1460
+            except:
+                # Resend packets not acknowledged
+                for seq_client, data in packets_in_buffer.items():
+                    packet = create_packet(seq_client, ack_client, 0, 64000, data)
+                    client_socket.send(packet)
+                    print('Resending packet:', seq_client)
+
+    # Send FIN packet
+    FIN_packet = create_packet(0, 0, 2, 64000, b'')
+    client_socket.send(FIN_packet)
+    print('Sending FIN packet')
+
+    # Close socket and exit
+    client_socket.close()
+    sys.exit()
+
+
 
 
 def send_and_wait(client_socket, file_name, seq_client, ack_client):

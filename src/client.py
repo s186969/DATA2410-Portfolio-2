@@ -24,13 +24,41 @@ def start_client(args):
 
 def send_data(client_socket, file_name):
     # Leser bildet oslomet.jpg og sender dette til server
-    with open(file_name, 'rb') as f: #FLAGG
+    with open(file_name, 'rb') as f: 
         image_data = f.read()
         data_length = len(image_data) #debug 
         print(f'Størrelsen til bildet er: {data_length}') #debug
-    client_socket.send(image_data)
+    
+    # En funksjon for å lage datapakker med header
+    seq = 1
+    ack = 0
+    number_of_data_sent = 0
 
-# En funksjon for å lage datapakker med header?
+    while number_of_data_sent < len(image_data):
+        print(f'Number of data sent: {number_of_data_sent}')
+        print("Lengden til image_data", len(image_data))
+
+        # Må hente ut riktige 1460 bytes av arrayet med image-data
+        image_data_start = number_of_data_sent
+        image_data_stop = image_data_start + 1460
+        data = image_data[image_data_start: image_data_stop]
+        
+        #Bruker metode fra header.py til å lage pakke med header og data
+        packet = create_packet(seq, ack, 0, 64000, data)
+        print(packet)
+
+        # Sender datapakken
+        client_socket.send(packet)
+
+        # Sequence number må økes med en, og number of data sent må oppdateres
+        number_of_data_sent += len(data)
+        seq += 1
+        print(f'Antall bytes sent: {number_of_data_sent}')
+    
+    sys.exit()
+        
+
+
 
 # En funksjon for å sende datapakker
 

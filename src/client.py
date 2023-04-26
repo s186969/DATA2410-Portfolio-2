@@ -2,10 +2,11 @@ from application import *
 from drtp import *
 from header import *
 from socket import *
+import sys
 
 # Starte en klient
 def start_client(args):
-    # Defining the IP address using the '-I' flag
+    # Defining the IP address using the '-i' flag
     ip_address = args.serverip
 
     # Defining the port number using the '-p' flag

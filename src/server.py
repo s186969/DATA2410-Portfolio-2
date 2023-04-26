@@ -9,8 +9,8 @@ def receive_data(data, file_name):
         f.write(data)
 
 def start_server(args):
-    # Defining the IP address using the '-b' flag
-    ip_address = args.bind
+    # Defining the IP address using the '-i' flag
+    ip_address = args.serverip
     
     # Defining the port number using the '-p' flag
     port_number = args.port
@@ -43,8 +43,6 @@ def start_server(args):
             # Herfra er mottak av data
             receive_data(data, file_name)
   
-
-
 # Stop and wait
     # wait for packet
     # If packet is OK, send ACK

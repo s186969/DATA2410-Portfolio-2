@@ -17,11 +17,8 @@ def parse_args():
     # '-c' flag: Enables the client mode
     parser.add_argument('-c', '--client', action = 'store_true', help = "Enables client mode")
 
-    # '-b' flag: Sets the IP address of the server to bind to. Default value is '127.0.0.1'
-    parser.add_argument('-b', '--bind', type = str, default = '127.0.0.1', help = "Selects the IP address of the server's interface")
-
-    # '-I' flag: Sets the IP address of the server that the client will connect to. Default value is '127.0.0.1'
-    parser.add_argument('-I', '--serverip', type= str, default = '127.0.0.1', help = "Selects the IP address of server")
+    # '-i' flag: Sets the IP address of the server that the client will connect to. Default value is '127.0.0.1'
+    parser.add_argument('-i', '--serverip', type= str, default = '127.0.0.1', help = "Selects the IP address of server")
 
     # '-p' flag: Sets the port number that the server will listen on or the client will connect to. The default value is 8088
     parser.add_argument('-p', '--port', type = int, default = 8088, help = "Selects the port number")
@@ -31,6 +28,9 @@ def parse_args():
 
     # '-r' flag: Sets the reliable method for the transfer
     parser.add_argument('-r', '--reliablemethod', type = str, help = "Selects a reliable method for the transfer. Choose either saw (Stop and Wait), gbn (Go-Back-N) or sr (Selective-Repeat)")
+
+    # -'t' flag: Sets the test case for the program
+    parser.add_argument('-t', '--testcase', help = "Selects a test case to run the progrom. Choose either skip_ack or loss")
     
     # Parsing the command-line arguments
     args = parser.parse_args()
@@ -51,17 +51,11 @@ def validate_args(args):
     if not (args.server or args.client):
         sys.exit("Error: You must run either in server or client mode")
 
-    # Checks if '-b' flag have a valid IP address
-    try:
-        ipaddress.ip_address(args.bind)
-    except ValueError:
-        sys.exit("Error: Invalid IP address for '-b' flag")
-
-    # Checks if '-I' flag have a valid IP address
+    # Checks if '-i' flag have a valid IP address
     try:
         ipaddress.ip_address(args.serverip)
     except ValueError:
-        sys.exit("Error: Invalid IP address for '-I' flag")
+        sys.exit("Error: Invalid IP address for '-i' flag")
     
     # Checks if the port number for the '-p' flag is between 1024 and 65535
     if args.port < 1024 or args.port > 65535:
@@ -71,6 +65,9 @@ def validate_args(args):
     if args.reliablemethod not in ["saw", "gbn", "sr"]:
         sys.exit("Error: Invalid value for '-r' flag. Format must be either saw, gbn or sr")
 
+    # Chekcs if the format for the '-t' flag is correct
+    if args.testcase not in ["skip_ack", "loss"]:
+        sys.exit("Error: Invalid value for '-t' flag. Format must be either skip_ack or loss")
               
 # This is the main entry point of the program
 if __name__ == '__main__':

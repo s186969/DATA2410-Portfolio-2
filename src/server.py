@@ -13,9 +13,6 @@ def start_server(args):
     
     # Defining the port number using the '-p' flag
     port_number = args.port
-
-    # Defining the file name using the '-f' flag
-    file_name = args.filename
     
     # Creates a UDP socket
     with socket(AF_INET, SOCK_DGRAM) as server_socket:
@@ -49,7 +46,7 @@ def start_server(args):
                     # Sjekke om pakken som er mottatt inneholder FIN-flagg
                     print('Mottatt FIN flagg fra clienten, mottar ikke mer data')
                     # Når FIN flagg er mottatt skriver vi dataen til filen. 
-                    with open(file_name, 'wb') as f:
+                    with open('received_image.jpg', 'wb') as f:
                         f.write(received_data)
                         print(f'HER ER DET VI HAR FÅTT: {received_data}')
 

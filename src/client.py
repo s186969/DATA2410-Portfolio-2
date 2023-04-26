@@ -21,14 +21,66 @@ def start_client(args):
 
     handshake = handshake_client(client_socket)
 
-    send_data(client_socket, file_name)
+    seq = 1
+    ack = 0
+
+    if args.reliablemethod == 'saw':
+        send_and_wait(client_socket, file_name, seq, ack)
+
+    #elif args.reliablemethod == 'gbn':
+
+    #elif args.reliablemethod == 'sr':
+
+    else:
+        send_data(client_socket, file_name)
+
+def send_and_wait(client_socket, file_name, seq_client, ack_client):
+    number_of_data_sent = 0
+
+    # Leser bildet oslomet.jpg og sender dette til server
+    with open(file_name, 'rb') as f: 
+        image_data = f.read()
+        data_length = len(image_data) #debug 
+
+    while number_of_data_sent < len(image_data):
+
+        # Må hente ut riktige 1460 bytes av arrayet med image-data
+        image_data_start = number_of_data_sent
+        image_data_stop = image_data_start + 1460
+        data = image_data[image_data_start: image_data_stop]
+        
+        #Bruker metode fra header.py til å lage pakke med header og data
+        packet = create_packet(seq_client, ack_client, 0, 64000, data)
+        client_socket.send(packet)
+        print('Her sendes en datapakke')
+        
+        # Venter på ack fra server
+        client_socket.settimeout(0.5)
+        try:
+            receive = client_socket.recv(1472)
+            seq, ack, flags = read_header(receive)
+            if ack == seq_client:
+                number_of_data_sent += len(data)
+                seq_client += 1
+        except:
+            number_of_data_sent = number_of_data_sent
+            # Pakken må sendes på nytt
+            
+    
+    # Sende et FIN flagg
+    FIN_packet = create_packet(0, 0, 2, 64000, b'')
+    client_socket.send(FIN_packet)
+    print('Nå har clienten sendt FIN - sending ferdig')
+
+    sys.exit()
+
 
 def send_data(client_socket, file_name):
     # Leser bildet oslomet.jpg og sender dette til server
     with open(file_name, 'rb') as f: 
         image_data = f.read()
         data_length = len(image_data) #debug 
-        print(f'Størrelsen til bildet er: {data_length}') #debug
+        #print(f'Størrelsen til bildet er: {data_length}') #debug
     
     # En funksjon for å lage datapakker med header
     seq = 1
@@ -36,8 +88,8 @@ def send_data(client_socket, file_name):
     number_of_data_sent = 0
 
     while number_of_data_sent < len(image_data):
-        print(f'Number of data sent: {number_of_data_sent}')
-        print("Lengden til image_data", len(image_data))
+        #print(f'Number of data sent: {number_of_data_sent}')
+        #print("Lengden til image_data", len(image_data))
 
         # Må hente ut riktige 1460 bytes av arrayet med image-data
         image_data_start = number_of_data_sent
@@ -46,7 +98,7 @@ def send_data(client_socket, file_name):
         
         #Bruker metode fra header.py til å lage pakke med header og data
         packet = create_packet(seq, ack, 0, 64000, data)
-        print(packet)
+        #print(packet)
 
         # Sender datapakken
         client_socket.send(packet)
@@ -65,11 +117,6 @@ def send_data(client_socket, file_name):
         
 
 
-
-# En funksjon for å sende datapakker
-
-# En funksjon for å motta data (ack)
-    # Hvis en pakke ikke inneholder noe data, så er den en "ACK")
 
 # Stop and wait funksjon:
     # sender pakke og venter på ack fra server

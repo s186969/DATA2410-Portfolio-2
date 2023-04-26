@@ -46,7 +46,7 @@ def start_server(args):
                     # Sjekke om pakken som er mottatt inneholder FIN-flagg
                     print('Mottatt FIN flagg fra clienten, mottar ikke mer data')
                     # Når FIN flagg er mottatt skriver vi dataen til filen. 
-                    with open(file_name, 'wb') as f:
+                    with open("received_image.jpg", 'wb') as f:
                         f.write(received_data)
                         print(f'HER ER DET VI HAR FÅTT: {received_data}')
 

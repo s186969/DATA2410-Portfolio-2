@@ -66,6 +66,22 @@ def start_server(args):
         #if args.reliablemethod == 'sw':
         #    send_and_wait_server()
 
+        # Receiving header from a client
+        tuple = server_socket.recvfrom(1472)
+        data = tuple[0]
+        address = tuple[1]
+
+        # Hente ut og lese av header
+        header_from_data = data[:12]
+        seq, ack, flags, win = parse_header(header_from_data)
+        # seq, ack, flags = read_header(data)
+        if seq == 0 and ack == 0:       # Skal denne være med???
+            handshake_server(flags, server_socket, address)
+            print('Handshake er gjennomført')
+            if args.reliablemethod == 'gbn':
+                print('sender nå til gbn')
+                go_back_N_server(server_socket)
+
         received_data = b''
         while True:
             # Receiving a message from a client
@@ -92,6 +108,7 @@ def start_server(args):
                     # Når FIN flagg er mottatt skriver vi dataen til filen. 
                     with open('received_image.jpg', 'wb') as f:
                         f.write(received_data)
+                    received_data = b''
 
             # Hvis seq er større enn null har vi mottatt en datapakke
             elif seq > 0:

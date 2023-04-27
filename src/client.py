@@ -146,7 +146,7 @@ def go_back_N(client_socket, file_name):
     # loop_data_sent hjelper slik at ikke for-løkken sender den samme pakken tre ganger
     loop_data_sent = number_of_data_sent
 
-    #for løkke som sender en pakke per indeks i sender_window, setter seq lik index i arrayet
+    #for løkke som sender tre pakker
     for i in sender_window:
         image_data_start = loop_data_sent
         image_data_stop = image_data_start + 1460
@@ -162,31 +162,42 @@ def go_back_N(client_socket, file_name):
         number_of_data_sent += len(data)
     
     seq_client = 3
+
     while len(sender_window) > 0:
         print(f'Nå er antall data sendt {number_of_data_sent}')
         client_socket.settimeout(0.5)
         print('Sender window er nå:')
         array_as_string = " ".join(str(element) for element in sender_window)
         print(array_as_string)
-
-        receive = client_socket.recv(1472)
-        seq, ack, flags = read_header(receive)
-        print(f'Mottatt pakke med ack: {ack}')
-        if ack in sender_window:
-            sender_window.remove(ack)
-            seq_client += 1
-
-        if number_of_data_sent < len(image_data):
-            # Hente ut riktig data av arrayet
-            image_data_start = number_of_data_sent
-            image_data_stop = image_data_start + 1460
-            data = image_data[image_data_start: image_data_stop]
-            packet = create_packet(seq_client, 0, 0, 64000, data)
-            client_socket.send(packet)
-            print(f"Sender pakke nummer {seq_client}")
-            number_of_data_sent += 1460
-            sender_window.append(seq_client)
-
+        try:
+            receive = client_socket.recv(1472)
+            seq, ack, flags = read_header(receive)
+            print(f'Mottatt pakke med ack: {ack}')
+            
+            if ack in sender_window:
+                sender_window.remove(ack)
+                seq_client += 1
+            
+            if number_of_data_sent < len(image_data):
+                # Hente ut riktig data av arrayet
+                image_data_start = number_of_data_sent
+                image_data_stop = image_data_start + 1460
+                data = image_data[image_data_start: image_data_stop]
+                if args.testcase == 'loss' and seq == 4:
+                    print('Seq 4 blir nå skippet')
+                    args.testcase = None
+                    print(f'args.testcase = {args.testcase}')
+                    seq += 1
+                else:
+                    packet = create_packet(seq_client, 0, 0, 64000, data)
+                    client_socket.send(packet)
+                    print(f"Sender pakke nummer {seq_client}")
+                    number_of_data_sent += 1460
+                    sender_window.append(seq_client)
+        
+        except:
+            print('Noe gikk galt med å motta ack')
+        
     # Sende et FIN flagg for å avslutte
     FIN_packet = create_packet(0, 0, 2, 64000, b'')
     client_socket.send(FIN_packet)

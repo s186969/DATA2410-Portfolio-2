@@ -7,7 +7,7 @@ def receive_data(data, received_data):
     received_data += data[12:]
     return received_data       
 
-def go_back_N_server(server_socket):
+def go_back_N_server(server_socket, args):
     last_received_seq = 0
     received_data = b''
 
@@ -80,17 +80,17 @@ def start_server(args):
                 print('Handshake er gjennomført')
                 if args.reliablemethod == 'saw':
                     print('sender nå til saw')
-                    stop_and_wait(server_socket)
+                    stop_and_wait(server_socket, args)
                 elif args.reliablemethod == 'gbn':
                     print('sender nå til gbn')
-                    go_back_N_server(server_socket)
+                    go_back_N_server(server_socket, args)
             
             # Brukes til å håndtere pakker i forbindelse med å finne RTT
             if b'ping' in data:
                 server_socket.sendto(data, address)
 
                     
-def stop_and_wait(server_socket):
+def stop_and_wait(server_socket, args):
     received_data = b''
     while True:
         # Receiving a message from a client
@@ -102,6 +102,13 @@ def stop_and_wait(server_socket):
         header_from_data = data[:12]
         seq, ack, flags, win = parse_header(header_from_data)
         # seq, ack, flags = read_header(data)
+
+        # Test case skip ack: The server ommits sending ack, so client has to resend
+        if args.testcase == 'skip_ack' and seq == 2:
+            print('Ack for seq 2 blir nå skippet')
+            args.testcase = None
+            print(f'args.testcase = {args.testcase}')
+            continue
 
         if flags == 2:
             # Sjekke om pakken som er mottatt inneholder FIN-flagg

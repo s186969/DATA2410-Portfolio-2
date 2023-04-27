@@ -72,22 +72,22 @@ def start_server(args):
 
             header_from_data = data[:12]
             seq, ack, flags, win = parse_header(header_from_data)
+            print(f'seq = {seq}, ack = {ack}, flags = {flags}')
 
             # seq, ack, flags = read_header(data)
-            if seq == 0 and ack == 0:       # Skal denne være med???
-                            # Hente ut og lese av header
-                handshake_server(flags, server_socket, address)
-                print('Handshake er gjennomført')
-                if args.reliablemethod == 'saw':
-                    print('sender nå til saw')
-                    stop_and_wait(server_socket, args)
-                elif args.reliablemethod == 'gbn':
-                    print('sender nå til gbn')
-                    go_back_N_server(server_socket, args)
-            
+                        # Hente ut og lese av header
+            handshake_server(flags, server_socket, address)
+            print('Handshake er gjennomført')
+            if args.reliablemethod == 'saw':
+                print('sender nå til saw')
+                stop_and_wait(server_socket, args)
+            elif args.reliablemethod == 'gbn':
+                print('sender nå til gbn')
+                go_back_N_server(server_socket, args)
+
             # Brukes til å håndtere pakker i forbindelse med å finne RTT
-            if b'ping' in data:
-                server_socket.sendto(data, address)
+            # if b'ping' in data:
+            #     server_socket.sendto(data, address)
 
                     
 def stop_and_wait(server_socket, args):
@@ -116,7 +116,7 @@ def stop_and_wait(server_socket, args):
             # Når FIN flagg er mottatt skriver vi dataen til filen.
             with open('received_image.jpg', 'wb') as f:
                 f.write(received_data)
-            received_data = b''
+            break
 
         # Hvis seq er større enn null har vi mottatt en datapakke
         elif seq > 0:

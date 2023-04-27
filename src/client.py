@@ -72,14 +72,15 @@ def stop_and_wait(client_socket, file_name, seq_client, ack_client):
         client_socket.settimeout(0.5)
 
         # Variabel for å sjekke om man har mottatt to akc på samme pakke
-        nack = 0 
+        dupack = 0 
         try:
             receive = client_socket.recv(1472)
             seq, ack, flags = read_header(receive)
             print(f'Mottatt pakke med ack: {ack}')
             if ack == seq_client:
-                nack += 1
-                if nack > 1: # Sjekke om mottatt to ack på samme pakke
+                dupack += 1
+                # Sjekke om mottatt to ack på samme pakke
+                if dupack > 1: 
                     number_of_data_sent = number_of_data_sent
                     # Pakken må sendes på nytt
                 else:
@@ -104,58 +105,57 @@ def stop_and_wait(client_socket, file_name, seq_client, ack_client):
 # i vinduet sendes på nytt.
 
 def go_back_N(client_socket, file_name):
-    sender_window = [1,2,3]
+    sender_window = [1,2,3] 
+    print(f'Lengden til arrauet er {len(sender_window)}')
     number_of_data_sent = 0
-    print(f'Antall data sendt: {number_of_data_sent}') #debug
 
-    # Leser bildet og sender dette til server
+    # Leser bildet og gjør det om til bytes
     with open(file_name, 'rb') as f:
         image_data = f.read()
-    print('Bildet har en størrelse på: ', len(image_data)) #debug
 
-    while number_of_data_sent < len(image_data):
-        # loop_data_sent hjelper slik at ikke for-løkken sender den samme pakken tre ganger
-        loop_data_sent = number_of_data_sent
+    # loop_data_sent hjelper slik at ikke for-løkken sender den samme pakken tre ganger
+    loop_data_sent = number_of_data_sent
 
-        #for løkke som sender en pakke per indeks i sender_window, setter seq lik index i arrayet
-        for i in sender_window:
-            image_data_start = loop_data_sent
+    #for løkke som sender en pakke per indeks i sender_window, setter seq lik index i arrayet
+    for i in sender_window:
+        image_data_start = loop_data_sent
+        image_data_stop = image_data_start + 1460
+        data = image_data[image_data_start: image_data_stop]
+
+        #Opprette pakke og sende den
+        packet = create_packet(i,0,0,64000,data)
+        client_socket.send(packet)
+        print(f'Sendt pakke nummer {i}')
+
+        #Oppdatere verdier for data sent både lokalt i for løkke og globalt i while løkke
+        loop_data_sent += len(data)
+        number_of_data_sent += len(data)
+    
+    seq_client = 3
+    while len(sender_window) > 0:
+        print(f'Nå er antall data sendt {number_of_data_sent}')
+        client_socket.settimeout(0.5)
+        print('Sender window er nå:')
+        array_as_string = " ".join(str(element) for element in sender_window)
+        print(array_as_string)
+
+        receive = client_socket.recv(1472)
+        seq, ack, flags = read_header(receive)
+        print(f'Mottatt pakke med ack: {ack}')
+        if ack in sender_window:
+            sender_window.remove(ack)
+            seq_client += 1
+
+        if number_of_data_sent < len(image_data):
+            # Hente ut riktig data av arrayet
+            image_data_start = number_of_data_sent
             image_data_stop = image_data_start + 1460
             data = image_data[image_data_start: image_data_stop]
-
-            #Opprette pakke og sende den
-            packet = create_packet(i,0,0,64000,data)
+            packet = create_packet(seq_client, 0, 0, 64000, data)
             client_socket.send(packet)
-            print(f'Sendt pakke nummer {i}, med størrelse {len(data)}')
-
-            #Oppdatere verdier for data sent både lokalt i for løkke og globalt i while løkke
-            loop_data_sent += len(data)
-            number_of_data_sent += len(data)
-        
-        #Timer, denne skal vel egentlig komme etter hver enkelt pakke?
-        client_socket.settimeout(0.5)
-
-        try:
-            packet_count = 0
-            for i in sender_window:
-                receive = client_socket.recv(1472)
-                seq, ack, flags = read_header(receive)
-                print(f'Mottatt pakke med ack: {ack}')
-                
-                # Her må vi håndtere at pakker skal slettes
-                # hvis de ikke kommer i rekkefølge, og hvordan
-                # sender_window da oppdateres
-
-
-
-            sender_window = [sender_window[0]+3, sender_window[1]+3, sender_window[2]+3]
-            array_as_string = " ".join(str(element) for element in sender_window)
-            print(array_as_string)
-            print(f'Numbers of data sent: {number_of_data_sent}')
-        except:
-            number_of_data_sent = number_of_data_sent
-            print("Mottok ikke ack innen tiden")
-            # Pakken må sendes på nytt
+            print(f"Sender pakke nummer {seq_client}")
+            number_of_data_sent += 1460
+            sender_window.append(seq_client)
 
     # Sende et FIN flagg for å avslutte
     FIN_packet = create_packet(0, 0, 2, 64000, b'')
@@ -163,14 +163,6 @@ def go_back_N(client_socket, file_name):
     print('Nå har clienten sendt FIN - sending ferdig')
 
     sys.exit()
-
-    
-
-
-
-
-
-
 
 
 def send_data(client_socket, file_name):

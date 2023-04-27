@@ -3,8 +3,7 @@ from server import *
 from header import *
 from application import *
 
-# Her må vi opprette three way handshake 
-    # Bruker flaggene som ligger i header for å sende SYN, ACK
+# TO DO: Sjekke at ACK kommer frem, legg inn en timer
 
 # Three way handshake
 def handshake_client(client_socket): 

@@ -31,6 +31,8 @@ def handshake_client(client_socket):
             
     except:
         print('Connection timeout')
+        # Skal vi sende en ny SYN??? (Gå opp til :
+        # client_socket.send(SYN_packet)    ??
 
 
 def handshake_server(flags, server_socket, address):

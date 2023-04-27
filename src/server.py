@@ -30,6 +30,7 @@ def go_back_N_server(server_socket):
             print(f'Received data er: {mengde}')
             with open('received_image.jpg', 'wb') as f:
                 f.write(received_data)
+            received_data = b''
 
         if seq == last_received_seq + 1:
             # Oppretter en tilhørende ack-pakke ved å sette ack til å være seq
@@ -42,10 +43,7 @@ def go_back_N_server(server_socket):
         
         #if seq > last_received_seq:
         #    received_data = received_data
-    
 
-
-    
 
 def start_server(args):
     # Defining the IP address using the '-i' flag
@@ -78,48 +76,45 @@ def start_server(args):
         if seq == 0 and ack == 0:       # Skal denne være med???
             handshake_server(flags, server_socket, address)
             print('Handshake er gjennomført')
-            if args.reliablemethod == 'gbn':
+            if args.reliablemethod == 'saw':
+                print('sender nå til saw')
+                stop_and_wait(server_socket)
+            elif args.reliablemethod == 'gbn':
                 print('sender nå til gbn')
                 go_back_N_server(server_socket)
 
-        received_data = b''
-        while True:
-            # Receiving a message from a client
-            tuple = server_socket.recvfrom(1472)
-            data = tuple[0]
-            address = tuple[1]
+def stop_and_wait(server_socket):
+    received_data = b''
+    while True:
+        # Receiving a message from a client
+        tuple = server_socket.recvfrom(1472)
+        data = tuple[0]
+        address = tuple[1]
 
-            # Hente ut og lese av header
-            header_from_data = data[:12] 
-            seq, ack, flags, win = parse_header (header_from_data)
-            # seq, ack, flags = read_header(data)
+        # Hente ut og lese av header
+        header_from_data = data[:12]
+        seq, ack, flags, win = parse_header(header_from_data)
+        # seq, ack, flags = read_header(data)
 
-            # Establish connection if seq and ack is 0
-            if seq == 0 and ack == 0:
-                if flags != 2:
-                    handshake_server(flags, server_socket, address)
-                    print('Handshake er gjennomført')
-                    if args.reliablemethod == 'gbn':
-                        print('sender nå til gbn')
-                        go_back_N_server(server_socket)
-                else:
-                    # Sjekke om pakken som er mottatt inneholder FIN-flagg
-                    print('Mottatt FIN flagg fra clienten, mottar ikke mer data')
-                    # Når FIN flagg er mottatt skriver vi dataen til filen. 
-                    with open('received_image.jpg', 'wb') as f:
-                        f.write(received_data)
-                    received_data = b''
+        if flags == 2:
+            # Sjekke om pakken som er mottatt inneholder FIN-flagg
+            print('Mottatt FIN flagg fra clienten, mottar ikke mer data')
+            # Når FIN flagg er mottatt skriver vi dataen til filen.
+            with open('received_image.jpg', 'wb') as f:
+                f.write(received_data)
+            received_data = b''
 
-            # Hvis seq er større enn null har vi mottatt en datapakke
-            elif seq > 0:
-                # Lagrer mottatt data i variabelen received_data vha funksjonen receive data
-                received_data = receive_data(data, received_data)
+        # Hvis seq er større enn null har vi mottatt en datapakke
+        else:
+            # Lagrer mottatt data i variabelen received_data vha funksjonen receive data
+            received_data = receive_data(data, received_data)
 
-                # Oppretter en tilhørende ack-pakke ved å sette ack til å være seq
-                ACK_packet = create_packet(0,seq,0,64000,b'') 
+            # Oppretter en tilhørende ack-pakke ved å sette ack til å være seq
+            ACK_packet = create_packet(0, seq, 0, 64000, b'')
 
-                # Sender ack-pakken til client
-                server_socket.sendto(ACK_packet, address)
+            # Sender ack-pakken til client
+            server_socket.sendto(ACK_packet, address)
+
 
 
 

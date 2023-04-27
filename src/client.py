@@ -3,6 +3,7 @@ from drtp import *
 from header import *
 from socket import *
 import sys
+import time
 
 
 # Starte en klient
@@ -19,6 +20,8 @@ def start_client(args):
     # Create a UDP socket
     client_socket = socket(AF_INET, SOCK_DGRAM)
     client_socket.connect((ip_address, port_number))
+
+    round_trip_time(client_socket, ip_address, port_number)
 
     # Establish reliable connection with handshake
     handshake = handshake_client(client_socket)
@@ -39,6 +42,33 @@ def start_client(args):
     # Denne kan vi nok ta bort når vi er ferdige
     else:
         send_data(client_socket, file_name)
+
+def round_trip_time(client_socket, ip_address, port_number):
+    ping = b'0' * 1472
+
+    total_round_trip_time = 0
+
+    round = 20
+
+    for i in range(round):
+        start_time = time.time()
+        client_socket.sendto(ping, (ip_address, port_number))
+
+        while True:
+            pong, address = client_socket.recvfrom(1472)
+            end_time = time.time()
+
+            round_trip_time = end_time - start_time
+
+            total_round_trip_time = total_round_trip_time + round_trip_time
+
+            print(f'Round {i+1}: {round_trip_time} s')
+            break
+    client_socket.sendto(b'DONE', (ip_address, port_number))
+
+    average_round_trip_time = total_round_trip_time / round
+    print(f'Average RTT: {average_round_trip_time} s')
+    return average_round_trip_time
 
 def stop_and_wait(client_socket, file_name, seq_client, ack_client):
     # Holde kontroll på data sendt

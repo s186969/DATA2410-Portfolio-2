@@ -64,6 +64,12 @@ def start_server(args):
 
         #if args.reliablemethod == 'sw':
         #    send_and_wait_server()
+        while True:
+            pong, address = server_socket.recvfrom(1472)
+            server_socket.sendto(pong, address)
+            if pong == b"DONE":
+                print(pong)
+                break
 
         # Receiving header from a client
         tuple = server_socket.recvfrom(1472)

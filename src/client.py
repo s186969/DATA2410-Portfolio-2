@@ -35,7 +35,7 @@ def start_client(args):
 
     # Sende data ved å bruke Go back N
     elif args.reliablemethod == 'gbn':
-        go_back_N(client_socket, file_name)
+        go_back_N(client_socket, file_name, args.testcase)
 
     # elif args.reliablemethod == 'sr':
 
@@ -135,7 +135,7 @@ def stop_and_wait(client_socket, file_name, seq_client, ack_client, testcase):
 # hvis ikke ack er mottatt, må alle pakker som er sendt
 # i vinduet sendes på nytt.
 
-def go_back_N(client_socket, file_name):
+def go_back_N(client_socket, file_name, testcase):
     sender_window = [1,2,3] 
     print(f'Lengden til arrauet er {len(sender_window)}')
     number_of_data_sent = 0
@@ -184,11 +184,9 @@ def go_back_N(client_socket, file_name):
                 image_data_start = number_of_data_sent
                 image_data_stop = image_data_start + 1460
                 data = image_data[image_data_start: image_data_stop]
-                if args.testcase == 'loss' and seq == 4:
+                if testcase == 'loss' and seq_client == 4:
                     print('Seq 4 blir nå skippet')
-                    args.testcase = None
-                    print(f'args.testcase = {args.testcase}')
-                    seq += 1
+                    testcase = None
                 else:
                     packet = create_packet(seq_client, 0, 0, 64000, data)
                     client_socket.send(packet)

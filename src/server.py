@@ -31,6 +31,7 @@ def go_back_N_server(server_socket):
             with open('received_image.jpg', 'wb') as f:
                 f.write(received_data)
             received_data = b''
+            last_received_seq = 0
 
         if seq == last_received_seq + 1:
             # Oppretter en tilhørende ack-pakke ved å sette ack til å være seq
@@ -41,9 +42,8 @@ def go_back_N_server(server_socket):
             received_data = receive_data(data, received_data)
             last_received_seq += 1
         
-        #if seq > last_received_seq:
-        #    received_data = received_data
-
+        if seq > last_received_seq:
+            continue
 
 
 def start_server(args):
@@ -65,31 +65,31 @@ def start_server(args):
         #if args.reliablemethod == 'sw':
         #    send_and_wait_server()
         while True:
-            pong, address = server_socket.recvfrom(1472)
-            server_socket.sendto(pong, address)
-            if pong == b"DONE":
-                print(pong)
-                break
+            # Receiving header from a client
+            tuple = server_socket.recvfrom(1472)
+            data = tuple[0]
+            address = tuple[1]
 
-        # Receiving header from a client
-        tuple = server_socket.recvfrom(1472)
-        data = tuple[0]
-        address = tuple[1]
+            header_from_data = data[:12]
+            seq, ack, flags, win = parse_header(header_from_data)
 
-        # Hente ut og lese av header
-        header_from_data = data[:12]
-        seq, ack, flags, win = parse_header(header_from_data)
-        # seq, ack, flags = read_header(data)
-        if seq == 0 and ack == 0:       # Skal denne være med???
-            handshake_server(flags, server_socket, address)
-            print('Handshake er gjennomført')
-            if args.reliablemethod == 'saw':
-                print('sender nå til saw')
-                stop_and_wait(server_socket)
-            elif args.reliablemethod == 'gbn':
-                print('sender nå til gbn')
-                go_back_N_server(server_socket)
+            # seq, ack, flags = read_header(data)
+            if seq == 0 and ack == 0:       # Skal denne være med???
+                            # Hente ut og lese av header
+                handshake_server(flags, server_socket, address)
+                print('Handshake er gjennomført')
+                if args.reliablemethod == 'saw':
+                    print('sender nå til saw')
+                    stop_and_wait(server_socket)
+                elif args.reliablemethod == 'gbn':
+                    print('sender nå til gbn')
+                    go_back_N_server(server_socket)
+            
+            # Brukes til å håndtere pakker i forbindelse med å finne RTT
+            if b'ping' in data:
+                server_socket.sendto(data, address)
 
+                    
 def stop_and_wait(server_socket):
     received_data = b''
     while True:

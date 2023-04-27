@@ -24,7 +24,7 @@ def start_client(args):
     round_trip_time(client_socket, ip_address, port_number)
 
     # Establish reliable connection with handshake
-    handshake = handshake_client(client_socket)
+    handshake_client(client_socket)
 
     seq = 1
     ack = 0
@@ -44,7 +44,8 @@ def start_client(args):
         send_data(client_socket, file_name)
 
 def round_trip_time(client_socket, ip_address, port_number):
-    ping = b'0' * 1472
+    ping = b'ping' + (b'0' * 1468)
+    packet = create_packet(1,1,0,64000, ping)
 
     total_round_trip_time = 0
 
@@ -52,7 +53,7 @@ def round_trip_time(client_socket, ip_address, port_number):
 
     for i in range(round):
         start_time = time.time()
-        client_socket.sendto(ping, (ip_address, port_number))
+        client_socket.send(packet)
 
         while True:
             pong, address = client_socket.recvfrom(1472)
@@ -64,8 +65,7 @@ def round_trip_time(client_socket, ip_address, port_number):
 
             print(f'Round {i+1}: {round_trip_time} s')
             break
-    client_socket.sendto(b'DONE', (ip_address, port_number))
-
+    
     average_round_trip_time = total_round_trip_time / round
     print(f'Average RTT: {average_round_trip_time} s')
     return average_round_trip_time

@@ -21,7 +21,7 @@ def start_client(args):
     client_socket = socket(AF_INET, SOCK_DGRAM)
     client_socket.connect((ip_address, port_number))
 
-    round_trip_time(client_socket, ip_address, port_number)
+    # round_trip_time(client_socket, ip_address, port_number)
 
     # Establish reliable connection with handshake
     handshake_client(client_socket)
@@ -31,7 +31,7 @@ def start_client(args):
 
     # Sende data ved å bruke stop and wait
     if args.reliablemethod == 'saw':
-        stop_and_wait(client_socket, file_name, seq, ack)
+        stop_and_wait(client_socket, file_name, seq, ack, args.testcase)
 
     # Sende data ved å bruke Go back N
     elif args.reliablemethod == 'gbn':
@@ -70,7 +70,7 @@ def round_trip_time(client_socket, ip_address, port_number):
     print(f'Average RTT: {average_round_trip_time} s')
     return average_round_trip_time
 
-def stop_and_wait(client_socket, file_name, seq_client, ack_client):
+def stop_and_wait(client_socket, file_name, seq_client, ack_client, testcase):
     # Holde kontroll på data sendt
     number_of_data_sent = 0
 
@@ -89,12 +89,12 @@ def stop_and_wait(client_socket, file_name, seq_client, ack_client):
         # Bruker metode fra header.py til å lage pakke med header og data
         packet = create_packet(seq_client, ack_client, 0, 64000, data)
 
-        # Dette kan vi bruke når vi skal ha packet loss
-        #if seq_client == 2:
-        #    print("Sender ikke pakke nummer 2")
-        #    number_of_data_sent = number_of_data_sent
-        #    seq_client += 1
-        #else:
+        if testcase == 'loss' and seq_client == 4:
+            print('Seq 4 blir nå skippet')
+            testcase = None
+            print(f'args.testcase = {testcase}')
+            continue
+
         print(f'Sender pakke med seq: {seq_client}')
         client_socket.send(packet)
 
@@ -111,12 +111,13 @@ def stop_and_wait(client_socket, file_name, seq_client, ack_client):
                 dupack += 1
                 # Sjekke om mottatt to ack på samme pakke
                 if dupack > 1: 
-                    number_of_data_sent = number_of_data_sent
+                    continue
                     # Pakken må sendes på nytt
                 else:
                     number_of_data_sent += len(data)
                     seq_client += 1
-            
+            else:
+                continue
         except:
             number_of_data_sent = number_of_data_sent
             # Pakken må sendes på nytt

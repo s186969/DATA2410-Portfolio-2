@@ -30,8 +30,7 @@ def go_back_N_server(server_socket, args):
             print(f'Received data er: {mengde}')
             with open('received_image.jpg', 'wb') as f:
                 f.write(received_data)
-            received_data = b''
-            last_received_seq = 0
+            break
 
         if seq == last_received_seq + 1:
             # Oppretter en tilhørende ack-pakke ved å sette ack til å være seq

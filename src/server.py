@@ -105,7 +105,7 @@ def stop_and_wait(server_socket):
             received_data = b''
 
         # Hvis seq er større enn null har vi mottatt en datapakke
-        else:
+        elif seq > 0:
             # Lagrer mottatt data i variabelen received_data vha funksjonen receive data
             received_data = receive_data(data, received_data)
 

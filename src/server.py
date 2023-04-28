@@ -65,28 +65,34 @@ def start_server(args):
         #    send_and_wait_server()
         while True:
             # Receiving header from a client
+            # data, address = server_socket.recvfrom(1472) # Forslag til å erstatte de tre linjene under
             tuple = server_socket.recvfrom(1472)
             data = tuple[0]
             address = tuple[1]
 
             header_from_data = data[:12]
             seq, ack, flags, win = parse_header(header_from_data)
-            print(f'seq = {seq}, ack = {ack}, flags = {flags}')
+
+            # Used to calculate RTT. Checks if the received data is a ping.
+            if b'ping' in data:
+                # If ping is found, it will pong back to the sender
+                server_socket.sendto(data, address)
+
+                # Continues to the next iteration of the while loop
+                continue
 
             # seq, ack, flags = read_header(data)
                         # Hente ut og lese av header
+            
             handshake_server(flags, server_socket, address)
             print('Handshake er gjennomført')
+            
             if args.reliablemethod == 'saw':
                 print('sender nå til saw')
                 stop_and_wait(server_socket, args)
             elif args.reliablemethod == 'gbn':
                 print('sender nå til gbn')
                 go_back_N_server(server_socket, args)
-
-            # Brukes til å håndtere pakker i forbindelse med å finne RTT
-            # if b'ping' in data:
-            #     server_socket.sendto(data, address)
 
                     
 def stop_and_wait(server_socket, args):

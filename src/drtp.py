@@ -10,6 +10,7 @@ def round_trip_time(client_socket, ip_address, port_number):
     ping = b'ping' + (b'0' * 1456)
     
     # Creates a packet with a header and the message
+    # Kommentere hvorfor vi har 1,1 her. Kanskje endre? 
     packet = create_packet(1,1,0,64000, ping)
 
     # Initialise the round trip time 
@@ -26,7 +27,7 @@ def round_trip_time(client_socket, ip_address, port_number):
         # print(f'Sending packet {i+1}') # Debug
         
         # Sends the packet to the specified address
-        client_socket.sendto(packet, (ip_address, port_number))
+        client_socket.send(packet)
 
         # While waiting for response
         while True:

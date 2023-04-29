@@ -109,75 +109,109 @@ def stop_and_wait(client_socket, file_name, seq_client, ack_client, testcase):
 # i vinduet sendes på nytt.
 
 def go_back_N(client_socket, file_name, testcase):
-    sender_window = [1,2,3] 
-    print(f'Lengden til arrauet er {len(sender_window)}')
+    sender_window = []
     number_of_data_sent = 0
+    seq_client = 1
+    last_ack = 0
 
     # Leser bildet og gjør det om til bytes
     with open(file_name, 'rb') as f:
         image_data = f.read()
 
-    # loop_data_sent hjelper slik at ikke for-løkken sender den samme pakken tre ganger
-    loop_data_sent = number_of_data_sent
-
-    #for løkke som sender tre pakker
-    for i in sender_window:
-        image_data_start = loop_data_sent
-        image_data_stop = image_data_start + 1460
-        data = image_data[image_data_start: image_data_stop]
-
-        #Opprette pakke og sende den
-        packet = create_packet(i,0,0,64000,data)
-        client_socket.send(packet)
-        print(f'Sendt pakke nummer {i}')
-
-        #Oppdatere verdier for data sent både lokalt i for løkke og globalt i while løkke
-        loop_data_sent += len(data)
-        number_of_data_sent += len(data)
-    
-    seq_client = 3
-
-    while len(sender_window) > 0:
-        print(f'Nå er antall data sendt {number_of_data_sent}')
-        client_socket.settimeout(0.5)
-        print('Sender window er nå:')
-        array_as_string = " ".join(str(element) for element in sender_window)
-        print(array_as_string)
-        try:
-            receive = client_socket.recv(1472)
-            seq, ack, flags = read_header(receive)
-            print(f'Mottatt pakke med ack: {ack}')
-            
-            if ack in sender_window:
-                sender_window.remove(ack)
+    #Passer på at sender_window hele tiden er fullt
+    while len(sender_window) < 3:
+   
+        #Sjekke om det er plass i sender window til å sende en ny pakke
+        while number_of_data_sent < len(image_data) and len(sender_window) < 3:
+            if testcase == 'loss' and seq_client == 3:
+                print('Seq 3 blir nå skippet')
+                testcase = None
                 seq_client += 1
+                number_of_data_sent += 1460
             
-            if number_of_data_sent < len(image_data):
-                # Hente ut riktig data av arrayet
-                image_data_start = number_of_data_sent
-                image_data_stop = image_data_start + 1460
-                data = image_data[image_data_start: image_data_stop]
-                if testcase == 'loss' and seq_client == 4:
-                    print('Seq 4 blir nå skippet')
-                    testcase = None
-                else:
-                    packet = create_packet(seq_client, 0, 0, 64000, data)
-                    client_socket.send(packet)
-                    print(f"Sender pakke nummer {seq_client}")
-                    number_of_data_sent += 1460
-                    sender_window.append(seq_client)
+            # Hente ut riktig område av data
+            image_data_start = number_of_data_sent
+            image_data_stop = image_data_start + 1460
+            data = image_data[image_data_start: image_data_stop]
+
+
+            #Opprette pakke og sende den
+            packet = create_packet(seq_client,0,0,64000,data)
+            client_socket.send(packet)
+            print(f'Sendt pakke nummer {seq_client}')
+            number_of_data_sent += 1460
+
+            #Legge sendt pakke inn i sender window
+            sender_window.append(seq_client)
+            array_as_string = " ".join(str(element) for element in sender_window)
+            print(array_as_string)
+            seq_client += 1
+
+
+        # Motta ack fra server så lenge det er pakker i sender_window
+        if len(sender_window) > 0:
+            client_socket.settimeout(0.5)
+            try:
+                receive = client_socket.recv(1472)
+                seq, ack, flags = read_header(receive)
+                print(f'Mottatt pakke med ack: {ack}')
+                
+                #Hvis ack er tilhørende pakke i sender_window:
+                if ack in sender_window:
+                    #Sjekk om ack er som foventet
+                    if ack == last_ack + 1:
+                        sender_window.remove(ack)
+                        #Hvis sender window nå er blitt tomt, betyr det at vi er ferdige
+                        if len(sender_window) == 0:
+                            # Sende et FIN flagg for å avslutte
+                            FIN_packet = create_packet(0, 0, 2, 64000, b'')
+                            client_socket.send(FIN_packet)
+                            print('Nå har clienten sendt FIN - sending ferdig')
+                            return
+                        
+                        array_as_string = " ".join(str(element) for element in sender_window)
+                        print(f'Nå er vinduet: {array_as_string}')
+                        
+                        #Oppdaterer last_ack variabelen
+                        last_ack  = ack
+                        continue
+            
+            #Hvis vi ikke mottar noen ack fra server, tyder det på packet loss og alt 
+            #sending window må sendes på nytt
+            except:
+                print('Mottok ikke forventet ack')
+                #Tømmer sender window
+                sender_window.clear()
+                
+                #Sender pakken etter den forrige vi vet kom frem
+                seq_client = last_ack + 1
+                number_of_data_sent = 1460 * last_ack
         
-        except:
-            print('Noe gikk galt med å motta ack')
-        
-    # Sende et FIN flagg for å avslutte
-    FIN_packet = create_packet(0, 0, 2, 64000, b'')
-    client_socket.send(FIN_packet)
-    print('Nå har clienten sendt FIN - sending ferdig')
+
+        #For å motta resterede ack etter siste sending
+        while len(sender_window) > 0 and number_of_data_sent >= len(image_data):
+            client_socket.settimeout(0.5)
+            try:
+                receive = client_socket.recv(1472)
+                seq, ack, flags = read_header(receive)
+                print(f'Mottatt pakke med ack: {ack}')
+                
+                if ack in sender_window:
+                    sender_window.remove(ack)
+                    array_as_string = " ".join(str(element) for element in sender_window)
+                    print(f'Nå er vinduet: {array_as_string}')
+                    continue
+                
+            except:
+                print('Noe gikk galt med å motta ack')
+                sender_window.clear()
+                seq_client = last_ack + 1
+                print(f'Fra except her er seq_client {seq_client} forventer 4')
+                number_of_data_sent = 1460 * last_ack
+                continue
 
     sys.exit()
-
-
+        
 def send_data(client_socket, file_name):
     # Leser bildet oslomet.jpg og sender dette til server
     with open(file_name, 'rb') as f:

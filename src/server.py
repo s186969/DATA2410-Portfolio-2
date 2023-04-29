@@ -21,7 +21,7 @@ def go_back_N_server(server_socket, args):
         header_from_data = data[:12] 
         seq, ack, flags, win = parse_header (header_from_data)
         print(f'Pakke: {seq}, flagget: {flags}, størrelse: {len(data)}')
-        
+
         if flags == 2:
             # Sjekke om pakken som er mottatt inneholder FIN-flagg
             print('Mottatt FIN flagg fra clienten, mottar ikke mer data')
@@ -34,13 +34,18 @@ def go_back_N_server(server_socket, args):
 
         #Sjekke om pakken vi har fått er den neste i rekkefølge
         if seq == seq_last_packet + 1: 
-            # Oppretter en tilhørende ack-pakke ved å sette ack til å være seq
-            ACK_packet = create_packet(0,seq,0,64000,b'') 
+            if args.testcase == 'skip_ack' and seq == 2:
+                print('Sender ikke ack')
+                args.testcase = None
+                continue
+            else:
+                # Oppretter en tilhørende ack-pakke ved å sette ack til å være seq
+                ACK_packet = create_packet(0,seq,0,64000,b'') 
 
-            # Sender ack-pakken til client
-            server_socket.sendto(ACK_packet, address)
-            received_data = receive_data(data, received_data)
-            seq_last_packet = seq
+                # Sender ack-pakken til client
+                server_socket.sendto(ACK_packet, address)
+                received_data = receive_data(data, received_data)
+                seq_last_packet = seq
         else:
             print('Pakken kom i feil rekkefølge')
             continue

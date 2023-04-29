@@ -30,7 +30,10 @@ def parse_args():
     parser.add_argument('-r', '--reliablemethod', type = str, help = "Selects a reliable method for the transfer. Choose either saw (Stop and Wait), gbn (Go-Back-N) or sr (Selective-Repeat)")
 
     # -'t' flag: Sets the test case for the program
-    parser.add_argument('-t', '--testcase', help = "Selects a test case to run the progrom. Choose either skip_ack or loss")
+    parser.add_argument('-t', '--testcase', type = str, help = "Selects a test case to run the program. Choose either skip_ack or loss")
+
+    # -'w' flag: Sets the window size for Go-Back-N and Selective-Repeat
+    parser.add_argument('-w', '--windowsize', type = int, default = 3, help = "Selects a window size for Go-Back-N and Selective-Repeeat")
     
     # Parsing the command-line arguments
     args = parser.parse_args()
@@ -68,6 +71,10 @@ def validate_args(args):
     # Chekcs if the format for the '-t' flag is correct
     if args.testcase is not None and args.testcase not in ["skip_ack", "loss"]:
         sys.exit("Error: Invalid value for '-t' flag. Format must be either skip_ack or loss")
+
+    # Checks if the value for the '-w' flag is between 1 and 15
+    if args.windowsize < 1 or args.windowsize > 15:
+        sys.exit("Error: Invalid value for '-w' flag. The window size must be a integer between 1 and 15")
               
 # This is the main entry point of the program
 if __name__ == '__main__':

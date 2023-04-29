@@ -64,6 +64,10 @@ def validate_args(args):
     if args.port < 1024 or args.port > 65535:
         sys.exit("Error: Invalid value for '-p' flag. The port must be an integer in the range [1024, 65535]")
 
+    # Checks if '-r' flag is enabled
+    if not args.reliablemethod:
+        sys.exit("Error: You must choose a reliable method")
+
     # Checks if the format for the '-r' flag is correct
     if args.reliablemethod is not None and args.reliablemethod not in ["saw", "gbn", "sr"]:
         sys.exit("Error: Invalid value for '-r' flag. Format must be either saw, gbn or sr")

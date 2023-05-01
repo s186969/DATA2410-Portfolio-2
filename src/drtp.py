@@ -101,11 +101,11 @@ def handshake_client(client_socket):
             seq, ack, flags = read_header(data)
 
             # Hvis header har aktivert SYN-ACK flagg
-            #if flags == 12:
-            #    ACK_packet = create_packet(0, 0, 4, 64000, b'')
-            #    client_socket.send(ACK_packet)
-            #    print('Nå har clienten sendt ACK')
-            #    return
+            if flags == 12:
+                ACK_packet = create_packet(0, 0, 4, 64000, b'')
+                client_socket.send(ACK_packet)
+                print('Nå har clienten sendt ACK')
+                return
             
     except:
         print('Did not receive SYN ACK: Connection timeout')

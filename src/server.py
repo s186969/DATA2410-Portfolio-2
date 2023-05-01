@@ -175,7 +175,7 @@ def sel_rep_server(server_socket, args):
        # Sjekker om pakken er den neste i rekkefølge
        if seq == seq_last_packet + 1:
            # Sjekke om pakken vi har fått er den neste i rekkefølge
-           if args.testcase == 'skip_ack' and seq == 2:
+           if args.testcase == 'skip_ack' and seq == 42:
                print('Sender ikke ack')
                args.testcase = None
                continue

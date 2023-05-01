@@ -108,18 +108,8 @@ def stop_and_wait(client_socket, file_name, seq_client, ack_client, testcase):
 # hvis ikke ack er mottatt, må alle pakker som er sendt
 # i vinduet sendes på nytt.
 
-def go_back_N(client_socket, file_name, testcase):
-    sender_window = [1,2,3] 
-    print(f'Lengden til arrauet er {len(sender_window)}')
-    number_of_data_sent = 0
 
-    # Leser bildet og gjør det om til bytes
-    with open(file_name, 'rb') as f:
-        image_data = f.read()
-
-    # loop_data_sent hjelper slik at ikke for-løkken sender den samme pakken tre ganger
-    loop_data_sent = number_of_data_sent
-
+def gbn_send_three_packages(client_socket, sender_window, loop_data_sent, image_data, number_of_data_sent, seq_client, testcase):
     #for løkke som sender tre pakker
     for i in sender_window:
         image_data_start = loop_data_sent
@@ -134,12 +124,19 @@ def go_back_N(client_socket, file_name, testcase):
         #Oppdatere verdier for data sent både lokalt i for løkke og globalt i while løkke
         loop_data_sent += len(data)
         number_of_data_sent += len(data)
-    
-    seq_client = 3
 
+        seq_client = seq_client + 1
+
+    gbn_send_back_and_forth(client_socket, sender_window, number_of_data_sent, seq_client, image_data,
+                                loop_data_sent, testcase)
+
+
+
+
+def gbn_send_back_and_forth(client_socket, sender_window, number_of_data_sent, seq_client, image_data, loop_data_sent, testcase):
     while len(sender_window) > 0:
         print(f'Nå er antall data sendt {number_of_data_sent}')
-        client_socket.settimeout(0.5)
+        client_socket.settimeout(60)
         print('Sender window er nå:')
         array_as_string = " ".join(str(element) for element in sender_window)
         print(array_as_string)
@@ -147,11 +144,12 @@ def go_back_N(client_socket, file_name, testcase):
             receive = client_socket.recv(1472)
             seq, ack, flags = read_header(receive)
             print(f'Mottatt pakke med ack: {ack}')
-            
+
             if ack in sender_window:
                 sender_window.remove(ack)
                 seq_client += 1
-            
+                sender_window.append(seq_client)
+
             if number_of_data_sent < len(image_data):
                 # Hente ut riktig data av arrayet
                 image_data_start = number_of_data_sent
@@ -165,17 +163,36 @@ def go_back_N(client_socket, file_name, testcase):
                     client_socket.send(packet)
                     print(f"Sender pakke nummer {seq_client}")
                     number_of_data_sent += 1460
-                    sender_window.append(seq_client)
-        
+
         except:
             print('Noe gikk galt med å motta ack')
-        
+            if number_of_data_sent < len(image_data):  # Add this condition
+                seq_client = sender_window[0]  # Update seq_client with the first element of sender_window
+                gbn_send_three_packages(client_socket, sender_window, loop_data_sent, image_data, number_of_data_sent,
+                                        seq_client, testcase)
+
     # Sende et FIN flagg for å avslutte
     FIN_packet = create_packet(0, 0, 2, 64000, b'')
     client_socket.send(FIN_packet)
     print('Nå har clienten sendt FIN - sending ferdig')
 
     sys.exit()
+
+
+def go_back_N(client_socket, file_name, testcase):
+    sender_window = [1,2,3] 
+    print(f'Lengden til arrauet er {len(sender_window)}')
+    number_of_data_sent = 0
+    seq_client = 0
+
+    # Leser bildet og gjør det om til bytes
+    with open(file_name, 'rb') as f:
+        image_data = f.read()
+
+    # loop_data_sent hjelper slik at ikke for-løkken sender den samme pakken tre ganger
+    loop_data_sent = number_of_data_sent
+
+    gbn_send_three_packages(client_socket, sender_window, loop_data_sent, image_data, number_of_data_sent, seq_client, testcase)
 
 
 def send_data(client_socket, file_name):

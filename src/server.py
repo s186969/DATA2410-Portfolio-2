@@ -50,8 +50,6 @@ def go_back_N_server(server_socket, args):
             print('Pakken kom i feil rekkefølge')
             continue
 
-
-
 def start_server(args):
     # Defining the IP address using the '-i' flag
     ip_address = args.serverip
@@ -100,6 +98,9 @@ def start_server(args):
             elif args.reliablemethod == 'gbn':
                 print('sender nå til gbn')
                 go_back_N_server(server_socket, args)
+            elif args.reliablemethod == 'sr':
+                    print('sender nå til sr')
+                    sel_rep_server(server_socket, args)
 
                     
 def stop_and_wait(server_socket, args):
@@ -141,9 +142,70 @@ def stop_and_wait(server_socket, args):
             # Sender ack-pakken til client
             server_socket.sendto(ACK_packet, address)
 
+def sel_rep_server(server_socket, args):
+    # Initialiserer en tom ordbok for å lagre mottatte pakker
+    received_data = {}
+    # Variabel å lagre sekvensnummeret til den sist mottatte pakken
+    seq_last_packet = 0
 
+    # Hjelpefunksjon som tar en ordbok, sekvensnummer og pakkeinnhold, og legger innholdet til ordboken med sekvensnummeret som nøkkel
+    def insert_received_data(data_dict, seq, data):
+        data_dict[seq] = data[12:]
+        return data_dict
 
+    while True:
+        # Mottar en melding fra klient. Lagrer data og adresse til variablene data og address
+        data, address = server_socket.recvfrom(1472)
 
+        # Trekker ut headeren fra dataene og analyserer den ved hjelp av parse_header-funksjonen for å hente sekvensnummer, ACK-nummer, flagg og vindusstørrelse
+        header_from_data = data[:12]
+        seq, ack, flags, win = parse_header(header_from_data)
+        
+        # Skriver ut informasjon om den mottatte pakken: sekvensnummer, flagg og størrelse
+        print(f'Pakke: {seq}, flagg: {flags}, størrelse: {len(data)}')
+
+        # Sjekker om den mottatte pakken inneholder FIN-flagget
+        if flags == 2:
+            # Skriver ut en melding om at FIN-flagget er mottatt og at serveren ikke vil motta flere data
+            print('Mottok FIN-flagg fra klienten, mottar ikke mer data')
+            # Sorterer de mottatte dataene basert på sekvensnumrene og setter dem sammen i en byte-streng
+            ordered_data = b''.join([received_data[key] for key in sorted(received_data)])
+            # Åpner en fil og lagrer de sorterte dataene i den. Avslutter deretter while-løkken 
+            with open('received_image.jpg', 'wb') as f:
+                f.write(ordered_data)
+            # Bryter ut av while-løkken 
+            break
+
+        # Lager en ACK-pakke med sekvensnummeret som mottas fra den mottatte pakken 
+        ACK_packet = create_packet(0, seq, 0, 64000, b'')
+
+        # Sender ACK-pakken til klienten ved hjelp av adressen som ble lagret i variabelen "address" tidligere
+        server_socket.sendto(ACK_packet, address)
+
+        # Sjekker om testtilfellet er satt til "skip_ack" og sekvensnummeret er 2 
+        if args.testcase == 'skip_ack' and seq == 2:
+            # Skriver ut en melding om at ACK ikke blir sendt i dette tilfellet
+            print('Sender ikke ACK')
+            # Tilbakestiller testtilfellet til "None".
+            args.testcase = None
+            # Fortsetter til neste iterasjon i while-løkken
+            continue
+        else:
+            # Plasserer pakken på riktig plass i mottaksbufferet ved å oppdatere ordboken med sekvensnummeret og dataene
+            received_data = insert_received_data(received_data, seq, data)
+
+            # Sjekker om den mottatte pakken er i riktig rekkefølge
+            if seq == seq_last_packet + 1:
+                # Hvis pakken er i riktig rekkefølge, oppdateres sekvensnummeret til den siste mottatte pakken
+                while seq in received_data:
+                    seq_last_packet = seq
+                    seq += 1
+            # Hvis en pakke ankommer i feil rekkefølge, utfør neste trinn i while-løkken
+            else:
+                # Skriver ut en melding om at pakken ankom i feil rekkefølge
+                print('Pakken ankom i feil rekkefølge')
+                # Fortsetter til neste iterasjon i while-løkken
+                continue
 
 
             

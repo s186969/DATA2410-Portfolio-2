@@ -65,7 +65,7 @@ def validate_args(args):
         sys.exit("Error: Invalid value for '-p' flag. The port must be an integer in the range [1024, 65535]")
 
     # Checks if the '-f' flag is enabled
-    if not args.filename:
+    if not args.filename and args.client is True:
         sys.exit("Error: You must select a file to transfer")
 
     # Checks if '-r' flag is enabled

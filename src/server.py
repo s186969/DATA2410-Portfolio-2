@@ -87,20 +87,24 @@ def start_server(args):
                 continue
 
             # seq, ack, flags = read_header(data)
-                        # Hente ut og lese av header
+            # Hente ut og lese av header
             
-            handshake_server(flags, server_socket, address)
-            print('Handshake er gjennomført')
+            handshake_result = handshake_server(flags, server_socket, address)
+
+            if handshake_result == True:
             
-            if args.reliablemethod == 'saw':
-                print('sender nå til saw')
-                stop_and_wait(server_socket, args)
-            elif args.reliablemethod == 'gbn':
-                print('sender nå til gbn')
-                go_back_N_server(server_socket, args)
-            elif args.reliablemethod == 'sr':
-                    print('sender nå til sr')
-                    sel_rep_server(server_socket, args)
+                if args.reliablemethod == 'saw':
+                    print('sender nå til saw')
+                    stop_and_wait(server_socket, args)
+                elif args.reliablemethod == 'gbn':
+                    print('sender nå til gbn')
+                    go_back_N_server(server_socket, args)
+                elif args.reliablemethod == 'sr':
+                        print('sender nå til sr')
+                        sel_rep_server(server_socket, args)
+            
+            else:
+                continue
 
                     
 def stop_and_wait(server_socket, args):
@@ -150,6 +154,8 @@ def sel_rep_server(server_socket, args):
 
     # Hjelpefunksjon som tar en ordbok, sekvensnummer og pakkeinnhold, og legger innholdet til ordboken med sekvensnummeret som nøkkel
     def insert_received_data(data_dict, seq, data):
+        print(f'Dette er data dict{data_dict}')
+        print(f'Dette er data {data}')
         data_dict[seq] = data[12:]
         return data_dict
 

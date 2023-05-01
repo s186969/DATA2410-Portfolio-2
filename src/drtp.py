@@ -3,6 +3,7 @@ from server import *
 from header import *
 from application import *
 import time
+import sys
 
 # This function calculates the average round trip time of 20 transfers where a transfer consists of 1472 bytes
 def round_trip_time(client_socket, ip_address, port_number):
@@ -100,16 +101,15 @@ def handshake_client(client_socket):
             seq, ack, flags = read_header(data)
 
             # Hvis header har aktivert SYN-ACK flagg
-            if flags == 12:
-                ACK_packet = create_packet(0, 0, 4, 64000, b'')
-                client_socket.send(ACK_packet)
-                print('Nå har clienten sendt ACK')
-                return
+            #if flags == 12:
+            #    ACK_packet = create_packet(0, 0, 4, 64000, b'')
+            #    client_socket.send(ACK_packet)
+            #    print('Nå har clienten sendt ACK')
+            #    return
             
     except:
-        print('Connection timeout')
-        # Skal vi sende en ny SYN??? (Gå opp til :
-        # client_socket.send(SYN_packet)    ??
+        print('Did not receive SYN ACK: Connection timeout')
+        sys.exit()
 
 
 def handshake_server(flags, server_socket, address):
@@ -119,10 +119,27 @@ def handshake_server(flags, server_socket, address):
         SYN_ACK_packet = create_packet(0, 0, 12, 64000, b'')
         server_socket.sendto(SYN_ACK_packet, address)
         print('Nå har server sendt SYN ACK')
+
+
+        tuple = server_socket.recvfrom(1472)
+        if tuple:
+            data = tuple[0]
+            address = tuple[1]
+
+            header_from_data = data[:12]
+            seq, ack, flags, win = parse_header(header_from_data)
+
+            
+            #server_socket.settimeout(0.5)
+            if flags == 4:
+                # Server mottar ACK fra klient og er da klar for å motta datapakker
+                print('Received ACK from client. Handshake done. Ready to receive.')
+                return True
+        else:
+            print('Did not receive ACK from client')
+            return False
+
     
-    if flags == 4:
-        # Server mottar ACK fra klient og er da klar for å motta datapakker
-        return
         
 def read_header(data):
     header_from_data = data[:12]

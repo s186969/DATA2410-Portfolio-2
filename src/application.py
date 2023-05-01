@@ -44,7 +44,7 @@ def parse_args():
     # Returns the parsed command-line arguments
     return args
 
-    # This function will validate the arguments from above
+# This function will validate the arguments from above
 def validate_args(args):
     # Checks if both '-s' flag and '-c' flag are enabled at the same time
     if args.server and args.client:
@@ -64,9 +64,13 @@ def validate_args(args):
     if args.port < 1024 or args.port > 65535:
         sys.exit("Error: Invalid value for '-p' flag. The port must be an integer in the range [1024, 65535]")
 
+    # Checks if the '-f' flag is enabled
+    if not args.filename and args.client is True:
+        sys.exit("Error: You must select a file to transfer")
+
     # Checks if '-r' flag is enabled
     if not args.reliablemethod:
-        sys.exit("Error: You must choose a reliable method")
+        sys.exit("Error: You must select a reliable method")
 
     # Checks if the format for the '-r' flag is correct
     if args.reliablemethod is not None and args.reliablemethod not in ["saw", "gbn", "sr"]:

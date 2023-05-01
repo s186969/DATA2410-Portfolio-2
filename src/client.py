@@ -128,9 +128,14 @@ def go_back_N(client_socket, file_name, testcase, window_size):
         while number_of_data_sent < len(image_data) and len(sender_window) < window_size:
             if testcase == 'loss' and seq_client == 3:
                 print('Seq 3 blir nå skippet')
+                sender_window.append(seq_client)
                 testcase = None
                 seq_client += 1
                 number_of_data_sent += 1460
+
+                # Break out of the inner loop when the window is full
+                if len(sender_window) >= window_size:
+                    break
             
             # Hente ut riktig område av data
             image_data_start = number_of_data_sent

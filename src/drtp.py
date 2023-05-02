@@ -180,6 +180,21 @@ def close_client(client_socket):
     # Exiting the prosess
     sys.exit()
 
+def close_server(server_socket, address):
+    # Creating a ACK packet
+    ACK_packet = create_packet(0, 0, 4, 64000, b'')
+
+    # Sending the ACK packet back to the client
+    server_socket.sendto(ACK_packet, address)
+    print(f'Sender ACK til klient.')
+
+    # Closes the socket connection with the server
+    server_socket.close()
+    print(f'Avslutter serveren grasiøst')
+
+    # Exiting the prosess
+    sys.exit()
+
 # Gracefully close when the transfer is finished
     # Sender sends FIN-packet. Receiver sends an ACK når FIN er received.
     # Etter at receiver har sendt ACK så lukkes connection.

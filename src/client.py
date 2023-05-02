@@ -97,6 +97,7 @@ def stop_and_wait(client_socket, file_name, seq_client, ack_client, testcase):
             number_of_data_sent = number_of_data_sent
             # Pakken må sendes på nytt
 
+    # Closes the connection gracefully
     close_client(client_socket)
 
 # Go-Back-N():
@@ -218,7 +219,8 @@ def go_back_N(client_socket, file_name, testcase, window_size):
                 print(f'Fra except her er seq_client {seq_client} forventer 4')
                 number_of_data_sent = 1460 * last_ack
                 continue
-    
+
+    # Closes the connection gracefully    
     close_client(client_socket)
         
 def send_data(client_socket, file_name):
@@ -258,8 +260,6 @@ def send_data(client_socket, file_name):
     FIN_packet = create_packet(0, 0, 2, 64000, b'')
     client_socket.send(FIN_packet)
     print('Nå har clienten sendt FIN - sending ferdig')
-
-    sys.exit()
 
 def sel_rep(client_socket, file_name, testcase, window_size):
     sender_window = []

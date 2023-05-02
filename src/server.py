@@ -94,7 +94,7 @@ def start_server(args):
             # seq, ack, flags = read_header(data)
             # Hente ut og lese av header
 
-            handshake_server(flags, server_socket, address)
+            handshake = handshake_server(flags, server_socket, address)
             print('Handshake er gjennomført')
 
             if args.reliablemethod == 'saw':

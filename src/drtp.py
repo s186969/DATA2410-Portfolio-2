@@ -104,6 +104,7 @@ def handshake_client(client_socket):
             
     except:
         print('Did not receive SYN ACK: Connection timeout')
+        client_socket.close()
         sys.exit()
 
 
@@ -115,24 +116,24 @@ def handshake_server(flags, server_socket, address):
         server_socket.sendto(SYN_ACK_packet, address)
         print('Nå har server sendt SYN ACK')
 
+        server_socket.settimeout(0.5)
 
-        tuple = server_socket.recvfrom(1472)
-        if tuple:
-            data = tuple[0]
-            address = tuple[1]
+        try:
+            data = server_socket.recvfrom(1472)[0]
+            if data:
+                
+                header_from_data = data[:12]
+                seq, ack, flags, win = parse_header(header_from_data)
 
-            header_from_data = data[:12]
-            seq, ack, flags, win = parse_header(header_from_data)
-
-            
-            #server_socket.settimeout(0.5)
-            if flags == 4:
-                # Server mottar ACK fra klient og er da klar for å motta datapakker
-                print('Received ACK from client. Handshake done. Ready to receive.')
-                return True
-        else:
-            print('Did not receive ACK from client')
-            return False
+                #server_socket.settimeout(0.5)
+                if flags == 4:
+                    # Server mottar ACK fra klient og er da klar for å motta datapakker
+                    print('Received ACK from client. Handshake done. Ready to receive.')
+                    return True
+        except:
+            print('Did not receive ACK from client. Server closing.')
+            server_socket.close()
+            sys.exit
 
 def read_header(data):
     header_from_data = data[:12]

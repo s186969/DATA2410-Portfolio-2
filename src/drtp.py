@@ -6,13 +6,12 @@ import time
 import sys
 
 # This function calculates the average round trip time of 20 transfers where a transfer consists of 1472 bytes
-def round_trip_time(client_socket, ip_address, port_number):
+def round_trip_time(client_socket):
     # Creates a message of 1460 bytes to be sent in the packet 
     ping = b'ping' + (b'0' * 1456)
     
     # Creates a packet with a header and the message
-    # Kommentere hvorfor vi har 1,1 her. Kanskje endre? 
-    packet = create_packet(1,1,0,64000, ping)
+    packet = create_packet(0, 0, 0, 64000, ping)
 
     # Initialise the round trip time 
     total_round_trip_time = 0
@@ -66,10 +65,6 @@ def round_trip_time(client_socket, ip_address, port_number):
 
                 # print(f'Round {i+1}: Timeout') # Debug
 
-                # Et annet forslag. Må fjerne de øvrige linjene
-                # Substracting the round that failed
-                # round = round - 1
-                
                 # Exits the while loop in order to start next round
                 break
 
@@ -139,13 +134,51 @@ def handshake_server(flags, server_socket, address):
             print('Did not receive ACK from client')
             return False
 
-    
-        
 def read_header(data):
     header_from_data = data[:12]
     seq, ack, flags, win = parse_header (header_from_data)
     return seq, ack, flags
 
+# This function handles the finishing part of the client
+def close_client(client_socket):
+    # Creates a FIN packet
+    FIN_packet = create_packet(0, 0, 2, 64000, b'')
+
+    # Sending the FIN packet to the client
+    client_socket.send(FIN_packet)
+    print('Nå har clienten sendt FIN - sending ferdig')
+
+    # Sets a timeout
+    client_socket.settimeout(0.5)
+
+    # While waiting for the response
+    while True:
+        try:
+            print("Venter på pakke 'FIN sin' ACK")
+            
+            # Receiving the response packet
+            data, address = client_socket.recvfrom(1472)
+
+            # Extracting the data from the header
+            seq, ack, flags = read_header(data)
+
+            # Breaking the loop if it is an ACK packet
+            if flags == 4:
+                print(f'A winner is you. Du har mottatt en ACK')
+
+                # Exiting the loop
+                break
+        # If no response packet is received, it will resend the FIN packet
+        except:
+            # Resending the FIN packet to the client
+            client_socket.send(FIN_packet)
+
+    # Closes the socket connection with the client
+    client_socket.close()
+    print(f'Avslutter klienten grasiøst')
+
+    # Exiting the prosess
+    sys.exit()
 
 # Gracefully close when the transfer is finished
     # Sender sends FIN-packet. Receiver sends an ACK når FIN er received.

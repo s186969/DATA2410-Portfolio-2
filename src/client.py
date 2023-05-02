@@ -20,7 +20,7 @@ def start_client(args):
     client_socket.connect((ip_address, port_number))
 
     # Calculating four times round-trip time
-    four_round_trip_time = 4 * round_trip_time(client_socket, ip_address, port_number)
+    four_round_trip_time = 4 * round_trip_time(client_socket)
     print(f'4RTT: {four_round_trip_time} s')
 
     # Establish reliable connection with handshake
@@ -97,12 +97,7 @@ def stop_and_wait(client_socket, file_name, seq_client, ack_client, testcase):
             number_of_data_sent = number_of_data_sent
             # Pakken må sendes på nytt
 
-    # Sende et FIN flagg for å avslutte
-    FIN_packet = create_packet(0, 0, 2, 64000, b'')
-    client_socket.send(FIN_packet)
-    print('Nå har clienten sendt FIN - sending ferdig')
-
-    sys.exit()
+    close_client(client_socket)
 
 # Go-Back-N():
 # Sender 5 pakker samtidig
@@ -116,6 +111,7 @@ def go_back_N(client_socket, file_name, testcase, window_size):
     number_of_data_sent = 0
     seq_client = 1
     last_ack = 0
+    ending = False
 
     # Leser bildet og gjør det om til bytes
     with open(file_name, 'rb') as f:
@@ -172,11 +168,11 @@ def go_back_N(client_socket, file_name, testcase, window_size):
                         sender_window.remove(ack)
                         # Hvis sender window nå er blitt tomt, betyr det at vi er ferdige
                         if len(sender_window) == 0:
-                            # Sende et FIN flagg for å avslutte
-                            FIN_packet = create_packet(0, 0, 2, 64000, b'')
-                            client_socket.send(FIN_packet)
-                            print('Nå har clienten sendt FIN - sending ferdig')
-                            return
+                            # Setting a variable to be used to exit the outer loop
+                            ending = True
+
+                            # Exiting the inner loop
+                            break
                         
                         array_as_string = " ".join(str(element) for element in sender_window)
                         print(f'Nå er vinduet: {array_as_string}')
@@ -195,7 +191,11 @@ def go_back_N(client_socket, file_name, testcase, window_size):
                 #Sender pakken etter den forrige vi vet kom frem
                 seq_client = last_ack + 1
                 number_of_data_sent = 1460 * last_ack
-        
+
+        # If the sender window is empty, the function has exited the inner loop
+        if ending == True:
+            # Exiting the outer loop
+            break
 
         #For å motta resterede ack etter siste sending
         while len(sender_window) > 0 and number_of_data_sent >= len(image_data):
@@ -218,8 +218,8 @@ def go_back_N(client_socket, file_name, testcase, window_size):
                 print(f'Fra except her er seq_client {seq_client} forventer 4')
                 number_of_data_sent = 1460 * last_ack
                 continue
-
-    sys.exit()
+    
+    close_client(client_socket)
         
 def send_data(client_socket, file_name):
     # Leser bildet oslomet.jpg og sender dette til server

@@ -32,6 +32,15 @@ def go_back_N_server(server_socket, args):
             print(f'Received data er: {mengde}')
             with open('received_image.jpg', 'wb') as f:
                 f.write(received_data)
+
+            # Creating a ACK packet
+            ACK_packet = create_packet(0,0,4,64000, b'')
+
+            # Sending the ACK packet back to the client
+            server_socket.sendto(ACK_packet, address)
+            print(f'Sender ACK til klient.')
+
+            # Exiting the loop
             break
 
         # Sjekke om pakken vi har fått er den neste i rekkefølge
@@ -132,6 +141,15 @@ def stop_and_wait(server_socket, args):
             # Når FIN flagg er mottatt skriver vi dataen til filen.
             with open('received_image.jpg', 'wb') as f:
                 f.write(received_data)
+
+            # Creating a ACK packet
+            ACK_packet = create_packet(0,0,4,64000, b'')
+
+            # Sending the ACK packet back to the client
+            server_socket.sendto(ACK_packet, address)
+            print(f'Sender ACK til klient.')
+
+            # Exiting the loop
             break
 
         # Hvis seq er større enn null har vi mottatt en datapakke

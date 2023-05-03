@@ -50,6 +50,8 @@ def stop_and_wait(client_socket, file_name, seq_client, ack_client, testcase):
     # Holde kontroll på data sendt
     number_of_data_sent = 0
 
+    attempts = 0
+
     # Leser bildet oslomet.jpg og sender dette til server
     with open(file_name, 'rb') as f:
         image_data = f.read()
@@ -95,7 +97,14 @@ def stop_and_wait(client_socket, file_name, seq_client, ack_client, testcase):
             else:
                 continue
         except:
-            number_of_data_sent = number_of_data_sent
+            if seq_client == 1:
+                print("Mottok ikke ack for den første!!!")
+                print(f'Attempts: {attempts}')
+                attempts = attempts + 1
+                if attempts >= 5:
+                    print("Nå har vi gjort 5 forsøk, og alle blir tapt, så græisfull avslutning")
+                    client_socket.close()
+                    sys.exit()
             # Pakken må sendes på nytt
 
     # Closes the connection gracefully
@@ -301,7 +310,7 @@ def sel_rep(client_socket, file_name, testcase, window_size):
     # Siste mottatte ACK
     last_ack = 0  
     # Retransmisjonstidsavbrudd (i sekunder)
-    retransmission_timeout = 0.01  
+    retransmission_timeout = 0.01
 
     # Åpne filen i binærmodus og les inn bildedata
     with open(file_name, 'rb') as f: 

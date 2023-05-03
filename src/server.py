@@ -95,7 +95,13 @@ def start_server(args):
             # Hente ut og lese av header
 
             handshake = handshake_server(flags, server_socket, address)
-            print('Handshake er gjennomført')
+
+            if handshake:
+                print('Handshake er gjennomført')
+            else:
+                print("Mottok ikke ACK fra klienten, avslutter greisfult")
+                server_socket.close()
+                sys.exit()
 
             if args.reliablemethod == 'saw':
                 print('sender nå til saw')

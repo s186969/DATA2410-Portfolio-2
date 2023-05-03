@@ -131,9 +131,7 @@ def handshake_server(flags, server_socket, address):
                     print('Received ACK from client. Handshake done. Ready to receive.')
                     return True
         except:
-            print('Did not receive ACK from client. Server closing.')
-            server_socket.close()
-            sys.exit
+            return False
 
 def read_header(data):
     header_from_data = data[:12]

@@ -42,14 +42,7 @@ def start_server(args):
             # seq, ack, flags = read_header(data)
             # Hente ut og lese av header
 
-            handshake = handshake_server(flags, server_socket, address)
-
-            if handshake:
-                print('Handshake er gjennomført')
-            else:
-                print("Mottok ikke ACK fra klienten, avslutter greisfult")
-                server_socket.close()
-                sys.exit()
+            handshake_server(flags, server_socket, address)
 
             if args.reliablemethod == 'saw':
                 print('sender nå til saw')
@@ -64,59 +57,6 @@ def start_server(args):
 def receive_data(data, received_data):
     received_data += data[12:]
     return received_data
-
-# Stores packets that arrive in sequence. Sends an ack back to the client for each package that arrived in order
-def go_back_N_server(server_socket, args):
-    #Variable to store received data in bytes
-    received_data = b''
-    #Variable to keep track of sequence number of last packet received
-    seq_last_packet = 0
-
-    while True:
-        # Receiving a message from a client
-        data = server_socket.recvfrom(1472)[0]
-        address = server_socket.recvfrom(1472)[1]
-
-        # Extract header from packet
-        header_from_data = data[:12]
-        # Read sequence number and flags from header
-        seq, ack, flags, win = parse_header(header_from_data)
-        print(f'Pakke: {seq} received')
-
-        # Check if flag is 2 (FIN flag enabled)
-        if flags == 2:
-            print('Received FIN flag from client')
-            # finds the size of the amount of data received
-            mengde = len(received_data)
-            print(f'Received data is: {mengde} bytes')
-            # When the FIN flag is received, we write the received bytes to the file.
-            with open('received_image.jpg', 'wb') as f:
-                f.write(received_data)
-
-            # Closing the connection gracefully
-            close_server(server_socket, address)
-
-        # check if the package we have received is the next in order
-        if seq == seq_last_packet + 1:
-            # Check if testcase skip_ack is enabled
-            if args.testcase == 'skip_ack' and seq == 2:
-                print('Does not send ACK')
-                # Disable test case so that the packet can retransmit
-                args.testcase = None
-                continue
-            else:
-                # Creates an associated ack packet by setting ack to be seq
-                ACK_packet = create_packet(0, seq, 0, 64000, b'')
-
-                # Sending ack-packet to client
-                server_socket.sendto(ACK_packet, address)
-                # Put the package's data into the received_data variable
-                received_data = receive_data(data, received_data)
-                # Update sequence number of last reveived packet
-                seq_last_packet = seq
-        else:
-            print('Packet received in the wrong order')
-            continue
 
 def stop_and_wait(server_socket, args):
     received_data = b''
@@ -158,6 +98,58 @@ def stop_and_wait(server_socket, args):
 
             # Sender ack-pakken til client
             server_socket.sendto(ACK_packet, address)
+
+# Stores packets that arrive in sequence. Sends an ack back to the client for each package that arrived in order
+def go_back_N_server(server_socket, args):
+    #Variable to store received data in bytes
+    received_data = b''
+    #Variable to keep track of sequence number of last packet received
+    seq_last_packet = 0
+
+    while True:
+        # Receiving a message from a client
+        data, address = server_socket.recvfrom(1472)
+
+        # Extract header from packet
+        header_from_data = data[:12]
+        # Read sequence number and flags from header
+        seq, ack, flags, win = parse_header(header_from_data)
+        print(f'Pakke: {seq} received')
+
+        # Check if flag is 2 (FIN flag enabled)
+        if flags == 2:
+            print('Received FIN flag from client')
+            # finds the size of the amount of data received
+            mengde = len(received_data)
+            print(f'Received data is: {mengde} bytes')
+            # When the FIN flag is received, we write the received bytes to the file.
+            with open('received_image.jpg', 'wb') as f:
+                f.write(received_data)
+
+            # Closing the connection gracefully
+            close_server(server_socket, address)
+
+        # check if the package we have received is the next in order
+        if seq == seq_last_packet + 1:
+            # Check if testcase skip_ack is enabled
+            if args.testcase == 'skip_ack' and seq == 2:
+                print('Does not send ACK')
+                # Disable test case so that the packet can retransmit
+                args.testcase = None
+                continue
+            else:
+                # Creates an associated ack packet by setting ack to be seq
+                ACK_packet = create_packet(0, seq, 0, 64000, b'')
+
+                # Sending ack-packet to client
+                server_socket.sendto(ACK_packet, address)
+                # Put the package's data into the received_data variable
+                received_data = receive_data(data, received_data)
+                # Update sequence number of last reveived packet
+                seq_last_packet = seq
+        else:
+            print('Packet received in the wrong order')
+            continue
 
 # Definerer funksjonen 'sel_rep_server' med parametrene 'server_socket' og 'args'
 def sel_rep_server(server_socket, args):

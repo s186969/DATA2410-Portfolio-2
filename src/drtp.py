@@ -129,9 +129,12 @@ def handshake_server(flags, server_socket, address):
                 if flags == 4:
                     # Server mottar ACK fra klient og er da klar for å motta datapakker
                     print('Received ACK from client. Handshake done. Ready to receive.')
+                    server_socket.settimeout(None)
                     return True
         except:
-            return False
+            print('Did not receive ACK from client. Server closing.')
+            server_socket.close()
+            sys.exit
 
 def read_header(data):
     header_from_data = data[:12]

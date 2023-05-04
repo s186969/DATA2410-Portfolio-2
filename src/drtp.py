@@ -31,10 +31,10 @@ def round_trip_time(client_socket):
 
         # While waiting for response
         while True:
+            # Sets a timeout for 0.5 seconds
+            client_socket.settimeout(0.5)
+            
             try:
-                # Sets a timeout for 0.5 seconds
-                client_socket.settimeout(0.5)
-
                 # Receiving the response packet
                 pong, address = client_socket.recvfrom(1472)
 

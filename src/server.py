@@ -190,7 +190,7 @@ def sel_rep_server(server_socket, args):
         # Sjekker om sekvensnummeret til den mottatte pakken er en mer enn sekvensnummeret til den sist mottatte pakken.
         if seq == seq_last_packet + 1:
             # Håndterer et testcase hvor serveren skal hoppe over å sende en ACK for pakke med sekvensnummer 42.
-            if args.testcase == 'skip_ack' and seq == 42:
+            if args.testcase == 'skip_ack' and seq == 4:
                 print('Sender ikke ack')
                 args.testcase = None
             else:
@@ -203,11 +203,15 @@ def sel_rep_server(server_socket, args):
                 # Oppdaterer sekvensnummeret til den sist mottatte pakken.
                 seq_last_packet = seq
                 # Hvis det er pakker i bufferet med sekvensnummeret en mer enn den sist mottatte pakken, behandles de og fjernes fra bufferet
+                array_as_string = " ".join(str(element) for element in buffer)
+                print(f'Buffer: {array_as_string}')
                 while seq_last_packet + 1 in buffer:
                     seq_last_packet += 1
                     received_data = receive_data(
                         buffer[seq_last_packet], received_data)
                     del buffer[seq_last_packet]
+                array_as_string = " ".join(str(element) for element in buffer)
+                print(f'Buffer: {array_as_string}')
                     
         # Hvis den mottatte pakken har et annet sekvensnummer enn 0 og ikke er en etter den sist mottatte pakken, lagres den i bufferet og en ACK sendes til klienten.
         elif seq != 0:

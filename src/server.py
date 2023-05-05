@@ -3,6 +3,58 @@ from application import *
 from drtp import *
 from header import *
 
+
+def receive_data(data, received_data):
+    received_data += data[12:]
+    return received_data
+
+
+def go_back_N_server(server_socket, args):
+    received_data = b''
+    seq_last_packet = 0
+
+    while True:
+        # Receiving a message from a client
+        tuple = server_socket.recvfrom(1472)
+        data = tuple[0]
+        address = tuple[1]
+
+        # Hente ut og lese av header
+        header_from_data = data[:12]
+        seq, ack, flags, win = parse_header(header_from_data)
+        print(f'Pakke: {seq}, flagget: {flags}, størrelse: {len(data)}')
+
+        if flags == 2:
+            # Sjekke om pakken som er mottatt inneholder FIN-flagg
+            print('Mottatt FIN flagg fra clienten, mottar ikke mer data')
+            # Når FIN flagg er mottatt skriver vi dataen til filen.
+            mengde = len(received_data)
+            print(f'Received data er: {mengde}')
+            with open('received_image.jpg', 'wb') as f:
+                f.write(received_data)
+
+            # Closeing the connection gracefully
+            close_server(server_socket, address)
+
+        # Sjekke om pakken vi har fått er den neste i rekkefølge
+        if seq == seq_last_packet + 1:
+            if args.testcase == 'skip_ack' and seq == 2:
+                print('Sender ikke ack')
+                args.testcase = None
+                continue
+            else:
+                # Oppretter en tilhørende ack-pakke ved å sette ack til å være seq
+                ACK_packet = create_packet(0, seq, 0, 64000, b'')
+
+                # Sender ack-pakken til client
+                server_socket.sendto(ACK_packet, address)
+                received_data = receive_data(data, received_data)
+                seq_last_packet = seq
+        else:
+            print('Pakken kom i feil rekkefølge')
+            continue
+
+
 def start_server(args):
     # Defining the IP address using the '-i' flag
     ip_address = args.serverip
@@ -42,7 +94,8 @@ def start_server(args):
             # seq, ack, flags = read_header(data)
             # Hente ut og lese av header
 
-            handshake_server(flags, server_socket, address)
+            handshake = handshake_server(flags, server_socket, address)
+            print('Handshake er gjennomført')
 
             if args.reliablemethod == 'saw':
                 print('sender nå til saw')
@@ -54,9 +107,6 @@ def start_server(args):
                 print('sender nå til sr')
                 sel_rep_server(server_socket, args)
 
-def receive_data(data, received_data):
-    received_data += data[12:]
-    return received_data
 
 def stop_and_wait(server_socket, args):
     received_data = b''
@@ -99,58 +149,6 @@ def stop_and_wait(server_socket, args):
             # Sender ack-pakken til client
             server_socket.sendto(ACK_packet, address)
 
-# Stores packets that arrive in sequence. Sends an ack back to the client for each package that arrived in order
-def go_back_N_server(server_socket, args):
-    #Variable to store received data in bytes
-    received_data = b''
-    #Variable to keep track of sequence number of last packet received
-    seq_last_packet = 0
-
-    while True:
-        # Receiving a message from a client
-        data, address = server_socket.recvfrom(1472)
-
-        # Extract header from packet
-        header_from_data = data[:12]
-        # Read sequence number and flags from header
-        seq, ack, flags, win = parse_header(header_from_data)
-        print(f'Pakke: {seq} received')
-
-        # Check if flag is 2 (FIN flag enabled)
-        if flags == 2:
-            print('Received FIN flag from client')
-            # finds the size of the amount of data received
-            mengde = len(received_data)
-            print(f'Received data is: {mengde} bytes')
-            # When the FIN flag is received, we write the received bytes to the file.
-            with open('received_image.jpg', 'wb') as f:
-                f.write(received_data)
-
-            # Closing the connection gracefully
-            close_server(server_socket, address)
-
-        # check if the package we have received is the next in order
-        if seq == seq_last_packet + 1:
-            # Check if testcase skip_ack is enabled
-            if args.testcase == 'skip_ack' and seq == 2:
-                print('Does not send ACK')
-                # Disable test case so that the packet can retransmit
-                args.testcase = None
-                continue
-            else:
-                # Creates an associated ack packet by setting ack to be seq
-                ACK_packet = create_packet(0, seq, 0, 64000, b'')
-
-                # Sending ack-packet to client
-                server_socket.sendto(ACK_packet, address)
-                # Put the package's data into the received_data variable
-                received_data = receive_data(data, received_data)
-                # Update sequence number of last reveived packet
-                seq_last_packet = seq
-        else:
-            print('Packet received in the wrong order')
-            continue
-
 # Definerer funksjonen 'sel_rep_server' med parametrene 'server_socket' og 'args'
 def sel_rep_server(server_socket, args):
     # Initialiserer en tom ordbok (dictionary) kalt 'buffer' for å holde pakker som kommer i feil rekkefølge.
@@ -181,7 +179,8 @@ def sel_rep_server(server_socket, args):
             with open('received_image.jpg', 'wb') as f:
                 f.write(received_data)
             # Avslutter evig løkke og avslutter funksjonen.
-            break
+            # break
+            
 
         # Sjekker om sekvensnummeret til den mottatte pakken er en mer enn sekvensnummeret til den sist mottatte pakken.
         if seq == seq_last_packet + 1:
@@ -212,3 +211,19 @@ def sel_rep_server(server_socket, args):
             ACK_packet = create_packet(0, seq, 0, 64000, b'')
             server_socket.sendto(ACK_packet, address)
 
+# Stop and wait
+    # wait for packet
+    # If packet is OK, send ACK
+    # Else, send DUPACK
+    # Repeat
+
+# Go-Back-N()
+    # Passes on data (lagre i en variabel?) in order.
+    # Hvis pakker ankommer i feil rekkefølge indikerer dette
+    # pakket loss og reordering.
+    # I dette tilfellet skal mottaker ikke sende ack og kan
+    # slette pakkene som kom i feil rekkefølge
+
+# Selective-Repeat():
+    # Tror ikke det skjer så mye her,
+    # sender neste i pakkene i som ikke allerede er sendt

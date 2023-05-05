@@ -4,7 +4,6 @@ from server import *
 from drtp import *
 import argparse
 import sys
-import threading
 import ipaddress
 
 # This function will parse the command-line arguments and perform basic error checking
@@ -16,6 +15,9 @@ def parse_args():
 
     # '-c' flag: Enables the client mode
     parser.add_argument('-c', '--client', action = 'store_true', help = "Enables client mode")
+
+    # '-d' flag: Enables the debug messages to be printed
+    parser.add_argument('-d', '--debug', action = 'store_true', help = "Enables debug messages")
 
     # '-i' flag: Sets the IP address of the server that the client will connect to. Default value is '127.0.0.1'
     parser.add_argument('-i', '--serverip', type= str, default = '127.0.0.1', help = "Selects the IP address of server")

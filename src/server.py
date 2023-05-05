@@ -48,8 +48,8 @@ def start_server(args):
             # seq, ack, flags = read_header(data)
             # Hente ut og lese av header
 
-            handshake = handshake_server(flags, server_socket, address)
-            print('Handshake er gjennomført')
+            handshake_server(flags, server_socket, address, args.debug)
+            print('Connection established')
 
             if args.reliablemethod == 'saw':
                 print('sender nå til saw')

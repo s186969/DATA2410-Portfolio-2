@@ -23,11 +23,11 @@ def start_client(args):
     client_socket.connect((ip_address, port_number))
 
     # Calculating four times round-trip time
-    four_round_trip_time = 4 * round_trip_time(client_socket)
+    four_round_trip_time = 4 * round_trip_time(client_socket, args.debug)
     print(f'4RTT: {four_round_trip_time} s')
 
     # Establish reliable connection with handshake
-    handshake_client(client_socket)
+    handshake_client(client_socket, args.debug)
 
     seq = 1
     ack = 0

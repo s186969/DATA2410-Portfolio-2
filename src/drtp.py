@@ -4,9 +4,16 @@ from header import *
 from application import *
 import time
 import sys
+import os
 
 # This function calculates the average round trip time of 20 transfers where a transfer consists of 1472 bytes
-def round_trip_time(client_socket):
+def round_trip_time(client_socket, debug):
+    # Debug message
+    if debug:
+        print(f'+' * os.get_terminal_size().columns)
+        print(f"Initiating the function 'round_trip_time()'")
+        print(f'+' * os.get_terminal_size().columns)
+        
     # Creates a message of 1460 bytes to be sent in the packet 
     ping = b'ping' + (b'0' * 1456)
     
@@ -23,8 +30,6 @@ def round_trip_time(client_socket):
     for i in range(round):
         # Records the start time of the round
         start_time = time.time()
-
-        # print(f'Sending packet {i+1}') # Debug
         
         # Sends the packet to the specified address
         client_socket.send(packet)
@@ -47,7 +52,9 @@ def round_trip_time(client_socket):
                 # Adds the current round trip time to the total round trip time
                 total_round_trip_time = total_round_trip_time + round_trip_time
 
-                # print(f'Round {i+1}: {round_trip_time} s') # Debug
+                # Debug message
+                if debug:
+                    print(f'Round {i+1}: {round_trip_time} s')
 
                 # Exits the while loop after receiving the response packet in order to start next round
                 break
@@ -63,7 +70,9 @@ def round_trip_time(client_socket):
                 # Adds the current round trip time to the total round trip time
                 total_round_trip_time = total_round_trip_time + round_trip_time
 
-                # print(f'Round {i+1}: Timeout') # Debug
+                # Debug message
+                if debug:
+                    print(f'Round {i+1}: Timeout')
 
                 # Exits the while loop in order to start next round
                 break
@@ -71,7 +80,13 @@ def round_trip_time(client_socket):
     # Calculating the average round trip time by dividing the total round trip time by the number of rounds
     average_round_trip_time = total_round_trip_time / round
 
-    # print(f'Average RTT: {average_round_trip_time} s') # Debug
+    # Debug message
+    if debug:
+        print(f'Average RTT: {average_round_trip_time} s') # Debug
+
+        print(f'=' * os.get_terminal_size().columns)
+        print(f"Terminating the function 'round_trip_time()'")
+        print(f'=' * os.get_terminal_size().columns)
 
     # Returns the average round trip time
     return average_round_trip_time
@@ -79,11 +94,18 @@ def round_trip_time(client_socket):
 # TO DO: Sjekke at ACK kommer frem, legg inn en timer
 
 # Three way handshake
-def handshake_client(client_socket): 
+def handshake_client(client_socket, debug):
+    if debug:
+        print(f'+' * os.get_terminal_size().columns)
+        print(f"Initiating the function 'handshake_client()'")
+        print(f'+' * os.get_terminal_size().columns)
+
     # Client starter med å sende SYN
     SYN_packet = create_packet(0, 0, 8, 64000, b'')
     client_socket.send(SYN_packet)
-    print('Her sender clienten SYN')
+
+    if debug:
+        print('The client initiates the handshake by sending SYN')
 
     client_socket.settimeout(0.5) # Sjekk om tiden skal være like lang her
     
@@ -99,7 +121,14 @@ def handshake_client(client_socket):
             if flags == 12:
                 ACK_packet = create_packet(0, 0, 4, 64000, b'')
                 client_socket.send(ACK_packet)
-                print('Nå har clienten sendt ACK')
+                
+                if debug:
+                    print('The client has received a SYNACK. Ending the handshake from their end by sending an ACK to the server')
+
+                    print(f'=' * os.get_terminal_size().columns)
+                    print(f"Terminating the function 'handshake_client()'")
+                    print(f'=' * os.get_terminal_size().columns)
+
                 return
             
     except:
@@ -108,13 +137,21 @@ def handshake_client(client_socket):
         sys.exit()
 
 
-def handshake_server(flags, server_socket, address):
+def handshake_server(flags, server_socket, address, debug):
+    # Debug message
+    if debug:
+        print(f'+' * os.get_terminal_size().columns)
+        print(f"Initiating the function 'handshake_server()'")
+        print(f'+' * os.get_terminal_size().columns)
+
     # Sjekker om vi har mottatt SYN-flagg fra client
     if flags == 8:
         # Lager en SYN ACK pakke
         SYN_ACK_packet = create_packet(0, 0, 12, 64000, b'')
         server_socket.sendto(SYN_ACK_packet, address)
-        print('Nå har server sendt SYN ACK')
+
+        if debug:
+            print('The server has received a SYN. Replying with a SYNACK')
 
         server_socket.settimeout(0.5)
 
@@ -128,7 +165,13 @@ def handshake_server(flags, server_socket, address):
                 #server_socket.settimeout(0.5)
                 if flags == 4:
                     # Server mottar ACK fra klient og er da klar for å motta datapakker
-                    print('Received ACK from client. Handshake done. Ready to receive.')
+                    if debug:
+                        print('The server received an ACK from client. Handshake complete')
+
+                        print(f'=' * os.get_terminal_size().columns)
+                        print(f"Terminating the function 'handshake_server()'")
+                        print(f'=' * os.get_terminal_size().columns)
+
                     server_socket.settimeout(None)
                     return True
         except:

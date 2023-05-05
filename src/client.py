@@ -133,13 +133,13 @@ def go_back_N(client_socket, file_name, testcase, window_size):
         image_data = f.read()
 
     # Keep sending packets when the window is not full
-    while len(sender_window) < window_size:
+    while len(sender_window) < window_size or retransmission == True:
    
         # Check if there is space in the sender window to send a new packet
         while number_of_data_sent < len(image_data) and len(sender_window) < window_size:
             # When testcase loss is enabled and sequence number is 3
             if testcase == 'loss' and seq_client == 3:
-                print('Seq 3 blir nå skippet')
+                print('\nSeq 3 blir nå skippet\n')
                 # The packet is added to the sender window to simulate that it has been sent
                 sender_window.append(seq_client)
                 # Disable testcase so that packet 3 can retransmit
@@ -171,7 +171,8 @@ def go_back_N(client_socket, file_name, testcase, window_size):
             sender_window.append(seq_client)
             # Print sender window
             array_as_string = " ".join(str(element) for element in sender_window)
-            print(f'Sender window: {array_as_string}')
+            if len(sender_window) == window_size:
+                print(f'Sender window: {array_as_string}')
             # increase packet number
             seq_client += 1
 
@@ -185,7 +186,7 @@ def go_back_N(client_socket, file_name, testcase, window_size):
                 receive = client_socket.recv(1472)
                 # Read acknowledge number from packet header
                 seq, ack, flags = read_header(receive)
-                print(f'Received ack number: {ack}')
+                print(f'\nReceived ack number: {ack}')
                 
                 # Check whether the ack number is in the sender_window:
                 if ack in sender_window:
@@ -203,24 +204,41 @@ def go_back_N(client_socket, file_name, testcase, window_size):
                             # Exiting the inner loop
                             break
                         
-                        # Print sender window
-                        array_as_string = " ".join(str(element) for element in sender_window)
-                        print(f'Sender window: {array_as_string}')
-                        
                         #Oppdaterer last_ack variabelen
                         #last_ack  = ack
                         continue
             
+        
             #If we do not receive any ack from the server, this indicates packet loss. Packages from this point on must be resent
             except:
-                print('Did not receive expected acknowledgement number')
+                print('\nDid not receive expected acknowledgement number')
                 #Clear sender window
-                sender_window.clear()
-                
-                #Sends the package after the previous one that we know has arrived
+                #sender_window.clear()
                 seq_client = last_ack + 1
-                #Update number of data sent
-                number_of_data_sent = 1460 * last_ack
+                print('Retransmit packets in sender window')
+                for packet in sender_window:
+                    # Hente ut riktig område av data
+                    image_data_start = number_of_data_sent
+                    image_data_stop = image_data_start + 1460
+                    data = image_data[image_data_start: image_data_stop]
+
+                    # Create new packet 
+                    packet = create_packet(seq_client,0,0,64000,data)
+                    # Send packet
+                    client_socket.send(packet)
+                    print(f'Sent packet number {seq_client}')
+                    array_as_string = " ".join(str(element) for element in sender_window)
+                    print(f'Sender window: {array_as_string}')
+                    seq_client += 1
+                    # Increase amount of data sent
+
+
+                #Sends the package after the previous one that we know has arrived
+                number_of_data_sent = number_of_data_sent
+                # The variable makes it possible to continue with the outer while loop even if the sending window is full
+                retransmission = True
+                
+
 
         # If the sender window is empty, the function has exited the inner loop
         if ending == True:
@@ -250,7 +268,7 @@ def go_back_N(client_socket, file_name, testcase, window_size):
             except:
                 print('Something went wrong receiving ack')
                 #If we do not receive ack from the server, this indicates packet loss. Packages from this point on must be resent
-                sender_window.clear()
+                #sender_window.clear()
                 #Sends the package after the previous one that we know has arrived
                 seq_client = last_ack + 1
                 # Update number of data sent

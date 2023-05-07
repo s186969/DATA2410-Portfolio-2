@@ -559,6 +559,19 @@ def sel_rep(client_socket, file_name, testcase, window_size):
 # skal de buffres og settes på riktig plass.
 # Bruke arrays her
 '''
+def create_and_send_datapacket(image_data, seq_client, client_socket):
+    number_of_data_sent = ((seq_client - 1) * 1460)
+    # Hente ut riktig område av data
+    image_data_start = number_of_data_sent
+    image_data_stop = image_data_start + 1460
+    data = image_data[image_data_start: image_data_stop]
+
+
+    # Create new packet 
+    packet = create_packet(seq_client,0,0,64000,data)
+    # Send packet
+    client_socket.send(packet)
+    print(f'Sent packet number {seq_client}')
 
 def sel_rep(client_socket, file_name, testcase, window_size):
     # Initializes the sender window for data in transit
@@ -573,71 +586,79 @@ def sel_rep(client_socket, file_name, testcase, window_size):
     ending = False
     waiting = False
     ack_array = []
-    retransmission = True
+    retransmission = False
 
     # Reads the picture and converts it to bytes
     with open(file_name, 'rb') as f:
         image_data = f.read()
 
-    # Keep sending packets when the window is not full
-    while retransmission == True or waiting == True:
-        while len(sender_window) < window_size:
-            print('Første while')
-            if ending == True:
-            # Exiting the outer loop
-                print('Ending true')
-                break
-    
-            # Check if there is space in the sender window to send a new packet
-            while number_of_data_sent < len(image_data) and len(sender_window) < window_size:
-                print('andre while')
-                # When testcase loss is enabled and sequence number is 3
-                if testcase == 'loss' and seq_client == 3:
-                    print('\nSeq 3 blir nå skippet\n')
-                    # The packet is added to the sender window to simulate that it has been sent
-                    sender_window.append(seq_client)
-                    # Disable testcase so that packet 3 can retransmit
-                    testcase = None
-                    # Increase sequence number to continue sending
-                    seq_client += 1
-                    # Increase number of bytes sent, since we simulate that  it has been sent
-                    number_of_data_sent += 1460
+    # Enter while-loop to keep sending packets when the window is not full, or to wait for ack, or to retransmit a packet
+    while len(sender_window) < window_size or waiting == True or retransmission == True:
+        print('Første while')
+        if ending == True:
+        # Exiting the outer loop
+            print('Ending true')
+            break
+        if number_of_data_sent >= len(image_data):
+            break
 
-                    # Break out of the inner loop when the window is full
-                    if len(sender_window) >= window_size:
-                        print('Break inni testcase loss')
-                        break
-
-                # Hente ut riktig område av data
-                image_data_start = number_of_data_sent
-                image_data_stop = image_data_start + 1460
-                data = image_data[image_data_start: image_data_stop]
-
-
-                # Create new packet 
-                packet = create_packet(seq_client,0,0,64000,data)
-                # Send packet
-                client_socket.send(packet)
-                print(f'Sent packet number {seq_client}')
-                # Increase amount of data sent
+        # Check if there is space in the sender window to send a new packet
+        i = 0
+        while (number_of_data_sent < len(image_data) and len(sender_window) < window_size) or retransmission:
+            print('andre while')
+            # When testcase loss is enabled and sequence number is 3
+            if testcase == 'loss' and seq_client == 3:
+                print('\nSeq 3 blir nå skippet\n')
+                # The packet is added to the sender window to simulate that it has been sent
+                sender_window.append(seq_client)
+                # Disable testcase so that packet 3 can retransmit
+                testcase = None
+                # Increase sequence number to continue sending
+                seq_client += 1
+                # Increase number of bytes sent, since we simulate that  it has been sent
+                
                 number_of_data_sent += 1460
 
-                # Add package number in sender window 
-                sender_window.append(seq_client)
-                # Print sender window
-                array_as_string = " ".join(str(element) for element in sender_window)
-                if len(sender_window) == window_size:
-                    print(f'Sender window: {array_as_string}')
-                # increase packet number
-                seq_client += 1
-                retransmission == False
-                waiting == False
+                # Break out of the inner loop when the window is full
+                if len(sender_window) >= window_size:
+                    print('Break inni testcase loss')
+                    break
+            
+            # Increase amount of data sent for eack new packet
+            if not retransmission:
+                number_of_data_sent += 1460
 
+            # Create and send a datapacket using this function
+            create_and_send_datapacket(image_data, seq_client, client_socket)
+
+
+            # Add package number in sender window 
+            if not retransmission:
+                sender_window.append(seq_client)
+
+            # Print sender window
+            array_as_string = " ".join(str(element) for element in sender_window)
+            if len(sender_window) == window_size:
+                print(f'Sender window: {array_as_string}')
+
+            # increase packet number
+            seq_client += 1
+            # When retransmitting, all packets in the window are resent, so the variable must be kept True for each packet in the window
+            if retransmission and i < len(sender_window):
+                retransmission = True
+                i += 1
+            else:
+                retransmission = False
+            
+            # Kan vi ta denne bort?
+            waiting = False
+
+        i = 0
 
         # Receive acknowledgment from the server as long as there are packets in the sender window
         if len(sender_window) > 0 and number_of_data_sent < len(image_data):
             # Wait for acknowledgement during this timeout
-            client_socket.settimeout(1)
+            client_socket.settimeout(0.5)
             try:
                 # Receive packet
                 receive = client_socket.recv(1472)
@@ -645,14 +666,16 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                 seq, ack, flags = read_header(receive)
                 print(f'\nReceived ack number: {ack}, last ack: {last_ack}')
                 
-                # Check whether the ack number is in the sender_window:
+                # If ack is equal to first seq in window and the ack_array is not empty, we know that all packets in window is received
+                
                 if ack == sender_window[0] and len(ack_array) > 0:
                     print(f'Clear all')
                     sender_window.clear()
                     ack_array.clear()
-                    last_ack += 3
+                    # We know that all seq in window was now acked. 
+                    last_ack += window_size
                     
-                
+                # Check whether the ack number is in the sender_window:
                 if ack in sender_window:
                     # Check if the ack number is as expected
                     print('her')
@@ -662,66 +685,39 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                         last_ack = ack  
                         # Remove this ack number from the sender_window
                         sender_window.remove(ack)
-
-                        # Check if sender_window is empty, then sending is over
-
-
-                        #if len(sender_window) == 0:
-                        #    # Setting a variable to be used to exit the outer loop
-                        #    ending = True
-                        #   
-                            # Exiting the inner loop
-                        #    break
-                        #else:
-                        #Oppdaterer last_ack variabelen
-                        #last_ack  = ack
                         continue
+                    # Ack was not in order, added to ack_array. 
                     else:
                         ack_array.append(ack)
+                        # Window is full, we have to wait for more ack
                         waiting = True
                         print('Nå skal vi vente')
                         continue    
                 
-        
+            #Lurer på om det som skjer i except egentlig også kunne vært inne i den "else" rett over. Samtidig, da får vi ikke brukt ack_arrayet. Kanskje ok. 
             #If we do not receive any ack from the server, this indicates packet loss. Packages from this point on must be resent
             except:
-
                 print(f'\nDid not receive expected acknowledgement number, expected er {last_ack}')
                 array_as_string = " ".join(str(element) for element in ack_array)
                 print(f'Ack_array: {array_as_string}')
-                #Clear sender window
-                #sender_window.clear()
+                
+                # The packet after last ack is lost, resend
                 seq_client = last_ack + 1
                 print('Retransmit packets in sender window')
-            
-                # Hente ut riktig område av data
-                image_data_start = number_of_data_sent
-                image_data_stop = image_data_start + 1460
-                data = image_data[image_data_start: image_data_stop]
 
-                # Create new packet 
-                packet = create_packet(seq_client,0,0,64000,data)
-                # Send packet
-                client_socket.send(packet)
-                print(f'Sent packet number {seq_client}')
+                # Retransmit lost packet
+                create_and_send_datapacket(image_data, seq_client, client_socket)
+
                 array_as_string = " ".join(str(element) for element in sender_window)
                 print(f'Sender window: {array_as_string}')
-                # Increase amount of data sent
                 
                 array_as_string = " ".join(str(element) for element in ack_array)
-                print('hei')
                 print(f'Ack_array: {array_as_string}')
+               
+                # Expect the rest of the window to be acked, can now continue
+                seq_client += window_size
 
-
-
-                #Sends the package after the previous one that we know has arrived
-                number_of_data_sent = number_of_data_sent
-                # The variable makes it possible to continue with the outer while loop even if the sending window is full
-                seq_client += 3
-                retransmission = True
-                
-
-
+        # Kan vi ta bort denne?
         # If the sender window is empty, the function has exited the inner loop
         if ending == True:
             # Exiting the outer loop
@@ -739,32 +735,42 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                 seq, ack, flags = read_header(receive)
                 print(f'Received acnowledgement number: {ack}')
                 
-                # Check if the acknowledgement number is in the sender window
-                if ack in sender_window:
-                    # Remove from sender window if received ack
-                    sender_window.remove(ack)
+                # When ack number is equal to last seq number in sender window and the ack_array is empty, sending is over.
+                if ack == sender_window[-1] and len(ack_array) == 0: 
+                    ending = True 
+                
+                #If we receive the ack for the first packet in the sender window, and there is packets in ack array,
+                # we know that all packets in the sender window is reveived by the server
+                if ack == sender_window[0] and len(ack_array) > 0:
+                    print(f'Clear all')
+                    sender_window.clear()
+                    ack_array.clear()
+                    last_ack += window_size
+                    retransmission = False
 
-                    #Print updated sender window
-                    array_as_string = " ".join(str(element) for element in sender_window)
-                    print(f'Sender window: {array_as_string}')
-                    print(f'Len sender vindu er {len(sender_window)}')
-                    if len(sender_window) == 0:
-                        print('ER VI HER??')
-                        ending = True
-                        close_client(client_socket)
-                        break
+                # Check if the acknowledgement number is in the sender window and check if the ack number is as expected    
+                elif ack in sender_window and ack == last_ack +1:
+                    print('her')
+                    # Update last_ack variable
+                    last_ack = ack  
+                    # Remove this ack number from the sender_window
+                    sender_window.remove(ack)
                     continue
+                else:
+                    ack_array.append(ack)
+                    waiting = True
+                    print('Nå skal vi vente')
+                    continue    
 
             except:
                 print('Something went wrong receiving ack')
                 #If we do not receive ack from the server, this indicates packet loss. Packages from this point on must be resent
-                #sender_window.clear()
                 #Sends the package after the previous one that we know has arrived
                 seq_client = last_ack + 1
                 # Update number of data sent
                 number_of_data_sent = 1460 * last_ack
+                retransmission = True
                 continue
-        
 
     # Closes the connection gracefully
     print('Close_Client kalles')

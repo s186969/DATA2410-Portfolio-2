@@ -183,6 +183,7 @@ def sel_rep_server(server_socket, args):
             # Skriver den mottatte dataen til en fil kalt 'received_image.jpg'.
             with open('received_image.jpg', 'wb') as f:
                 f.write(received_data)
+            close_server(server_socket, address)
             # Avslutter evig løkke og avslutter funksjonen.
             # break
             
@@ -207,8 +208,7 @@ def sel_rep_server(server_socket, args):
                 print(f'Buffer: {array_as_string}')
                 while seq_last_packet + 1 in buffer:
                     seq_last_packet += 1
-                    received_data = receive_data(
-                        buffer[seq_last_packet], received_data)
+                    received_data = receive_data(buffer[seq_last_packet], received_data)
                     del buffer[seq_last_packet]
                 array_as_string = " ".join(str(element) for element in buffer)
                 print(f'Buffer: {array_as_string}')

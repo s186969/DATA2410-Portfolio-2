@@ -59,9 +59,14 @@ def stop_and_wait(client_socket, file_name, seq_client, ack_client, testcase):
     with open(file_name, 'rb') as f:
         image_data = f.read()
 
+    # The total value of bytes sent for calculating throughput
+    total_bytes_sent = 0 
+
+    # Starting time for calculating throughput
+    starting_time = time.time()
+
     # Så lenge vi ikke har sendt hele bildet, fortsetter vi å sende
     while number_of_data_sent < len(image_data):
-
         # Må hente ut riktige 1460 bytes av arrayet med image-data
         image_data_start = number_of_data_sent
         image_data_stop = image_data_start + 1460
@@ -75,6 +80,9 @@ def stop_and_wait(client_socket, file_name, seq_client, ack_client, testcase):
             testcase = None
             print(f'args.testcase = {testcase}')
             continue
+
+        # Adding the bytes for each sent packet for calculating throughput 
+        total_bytes_sent = total_bytes_sent + len(data)
 
         print(f'Sender pakke med seq: {seq_client}')
         client_socket.send(packet)
@@ -110,6 +118,19 @@ def stop_and_wait(client_socket, file_name, seq_client, ack_client, testcase):
                     sys.exit()
             # Pakken må sendes på nytt
 
+    # Ending time for calculating throughput
+    ending_time = time.time()
+
+    # Duration of the transfer for calculating throughput
+    duration_time = ending_time - starting_time
+
+    # Throughput of the transfer
+    throughput = (total_bytes_sent * 8e-6) / duration_time
+
+    print(f'Total bytes: {total_bytes_sent} bytes')
+    print(f'Duration: {duration_time:.2f} s')
+    print(f'Throughput: {throughput:.2f} Mbps')
+
     # Closes the connection gracefully
     close_client(client_socket)
 
@@ -131,6 +152,12 @@ def go_back_N(client_socket, file_name, testcase, window_size):
     # Reads the picture and converts it to bytes
     with open(file_name, 'rb') as f:
         image_data = f.read()
+
+    # The total value of bytes sent for calculating throughput
+    total_bytes_sent = 0 
+
+    # Starting time for calculating throughput
+    starting_time = time.time()
 
     # Keep sending packets when the window is not full
     while len(sender_window) < window_size or retransmission == True:
@@ -161,9 +188,14 @@ def go_back_N(client_socket, file_name, testcase, window_size):
 
             # Create new packet 
             packet = create_packet(seq_client,0,0,64000,data)
+
+            # Adding the bytes for each sent packet for calculating throughput 
+            total_bytes_sent = total_bytes_sent + len(data)
+
             # Send packet
             client_socket.send(packet)
             print(f'Sent packet number {seq_client}')
+
             # Increase amount of data sent
             number_of_data_sent += 1460
 
@@ -224,6 +256,10 @@ def go_back_N(client_socket, file_name, testcase, window_size):
 
                     # Create new packet 
                     packet = create_packet(seq_client,0,0,64000,data)
+
+                    # Adding the bytes for each sent packet for calculating throughput 
+                    total_bytes_sent = total_bytes_sent + len(data)
+
                     # Send packet
                     client_socket.send(packet)
                     print(f'Sent packet number {seq_client}')
@@ -274,6 +310,19 @@ def go_back_N(client_socket, file_name, testcase, window_size):
                 # Update number of data sent
                 number_of_data_sent = 1460 * last_ack
                 continue
+
+    # Ending time for calculating throughput
+    ending_time = time.time()
+
+    # Duration of the transfer for calculating throughput
+    duration_time = ending_time - starting_time
+
+    # Throughput of the transfer
+    throughput = (total_bytes_sent * 8e-6) / duration_time
+
+    print(f'Total bytes: {total_bytes_sent} bytes')
+    print(f'Duration: {duration_time:.2f} s')
+    print(f'Throughput: {throughput:.2f} Mbps')
 
     # Closes the connection gracefully
     close_client(client_socket)
@@ -573,6 +622,8 @@ def create_and_send_datapacket(image_data, seq_client, client_socket):
     client_socket.send(packet)
     print(f'Sent packet number {seq_client}')
 
+    return data
+
 def sel_rep(client_socket, file_name, testcase, window_size):
     # Initializes the sender window for data in transit
     sender_window = []
@@ -591,6 +642,12 @@ def sel_rep(client_socket, file_name, testcase, window_size):
     # Reads the picture and converts it to bytes
     with open(file_name, 'rb') as f:
         image_data = f.read()
+
+    # The total value of bytes sent for calculating throughput
+    total_bytes_sent = 0 
+
+    # Starting time for calculating throughput
+    starting_time = time.time()
 
     # Enter while-loop to keep sending packets when the window is not full, or to wait for ack, or to retransmit a packet
     while len(sender_window) < window_size or waiting == True or retransmission == True:
@@ -629,8 +686,10 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                 number_of_data_sent += 1460
 
             # Create and send a datapacket using this function
-            create_and_send_datapacket(image_data, seq_client, client_socket)
+            data = create_and_send_datapacket(image_data, seq_client, client_socket)
 
+            # Adding the bytes for each sent packet for calculating throughput 
+            total_bytes_sent = total_bytes_sent + len(data)
 
             # Add package number in sender window 
             if not retransmission:
@@ -706,7 +765,10 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                 print('Retransmit packets in sender window')
 
                 # Retransmit lost packet
-                create_and_send_datapacket(image_data, seq_client, client_socket)
+                data = create_and_send_datapacket(image_data, seq_client, client_socket)
+
+                # Adding the bytes for each sent packet for calculating throughput 
+                total_bytes_sent = total_bytes_sent + len(data)
 
                 array_as_string = " ".join(str(element) for element in sender_window)
                 print(f'Sender window: {array_as_string}')
@@ -771,6 +833,19 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                 number_of_data_sent = 1460 * last_ack
                 retransmission = True
                 continue
+            
+    # Ending time for calculating throughput
+    ending_time = time.time()
+
+    # Duration of the transfer for calculating throughput
+    duration_time = ending_time - starting_time
+
+    # Throughput of the transfer
+    throughput = (total_bytes_sent * 8e-6) / duration_time
+
+    print(f'Total bytes: {total_bytes_sent} bytes')
+    print(f'Duration: {duration_time:.2f} s')
+    print(f'Throughput: {throughput:.2f} Mbps')
 
     # Closes the connection gracefully
     print('Close_Client kalles')

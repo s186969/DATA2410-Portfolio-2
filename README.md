@@ -38,9 +38,9 @@ python3 application.py -s -f Photo.jpg -m gbn -t skip_ack
 
 RUNNING THE CLIENT
 To run the client, use the following command:
----------------------------------------------------------------------
+--------------------------------------------------------------------------
 python3 application.py -c -f [filename] -r [reliability_method] [options]
----------------------------------------------------------------------
+--------------------------------------------------------------------------
 
 -c: Indicates running the client
 -f: Specifies the filename to send

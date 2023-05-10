@@ -1,9 +1,9 @@
 # DATA2410-Portfolio-2
 
-OVERVIEW\n
+OVERVIEW\
 This is a simple file transfer application, Reliable Transport Protocol (DRTP), built on top of UDP. It consists of a client and a server that enable reliable data transfer of files. The application supports three reliability functions: Stop and Wait, Go-Back-N, and Selective Repeat.
 
-PREREQUISITES
+PREREQUISITES\
 - Python 3.x installed on your system
 - A text editor or an Integrated Development Environment (IDE) for editing Python code
 
@@ -17,7 +17,9 @@ python3 application.py [mode] [flags]
 
 RUNNING THE SERVER
 To run the server, use the following command:
-''' python3 application.py -s -f [filename] -m [reliability_method] [options] '''
+```
+python3 application.py -s -f [filename] -m [reliability_method] [options]
+```
 
 -s: Indicates running the server
 -f: Specifies the filename to receive
@@ -25,14 +27,20 @@ To run the server, use the following command:
 -t: Optional flag for testing purposes (skip_ack)
 
 Example:
-''' python3 application.py -s -f Photo.jpg -m gbn '''
+```
+python3 application.py -s -f Photo.jpg -m gbn
+```
 
 To skip an ack to trigger retransmission at the sender-side:
-''' python3 application.py -s -f Photo.jpg -m gbn -t skip_ack '''
+```
+python3 application.py -s -f Photo.jpg -m gbn -t skip_ack
+```
 
 RUNNING THE CLIENT
 To run the client, use the following command:
-''' python3 application.py -c -f [filename] -r [reliability_method] [options] '''
+```
+python3 application.py -c -f [filename] -r [reliability_method] [options]
+```
 
 -c: Indicates running the client
 -f: Specifies the filename to send
@@ -40,10 +48,14 @@ To run the client, use the following command:
 -t: Optional flag for testing purposes (loss)
 
 Example:
-''' python3 application.py -c -f Photo.jpg -r gbn '''
+```
+python3 application.py -c -f Photo.jpg -r gbn
+```
 
 To test packet_loss scenario:
-''' python3 application.py -c -f Photo.jpg -r gbn -t loss '''
+```
+python3 application.py -c -f Photo.jpg -r gbn -t loss
+```
 
 RELIABILITY METHODS
 Stop and Wait (stop_and_wait): 

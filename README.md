@@ -1,6 +1,6 @@
 # DATA2410-Portfolio-2
 
-OVERVIEW
+OVERVIEW\n
 This is a simple file transfer application, Reliable Transport Protocol (DRTP), built on top of UDP. It consists of a client and a server that enable reliable data transfer of files. The application supports three reliability functions: Stop and Wait, Go-Back-N, and Selective Repeat.
 
 PREREQUISITES

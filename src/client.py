@@ -458,13 +458,12 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                 
             #If we do not receive any ack from the server, this indicates packet loss. Packages from this point on must be resent
             except:
-                print(f'\nDid not receive expected acknowledgement number, expected er {last_ack}')
+                print('\nDid not receive expected acknowledgement number')
                 array_as_string = " ".join(str(element) for element in ack_array)
-                print(f'Ack_array: {array_as_string}')
+                print(f'Ack_array: {array_as_string}\n')
                 
                 # The packet after last ack is lost, resend
                 seq_client = last_ack + 1
-                print(f'Retransmit packet number {seq_client}')
 
                 # Retransmit lost packet
                 data = create_and_send_datapacket(image_data, seq_client, client_socket)
@@ -523,12 +522,12 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                 else:
                     #Ack in window, but in the wrong order. Saving in ack_array. 
                     ack_array.append(ack)
+                    print('Received ack in wrong order, saved')
                     # The packet after last ack is lost, resend
-                    #seq_client = last_ack + 1
-
+                    seq_client = last_ack + 1
+                    data = create_and_send_datapacket(image_data, seq_client, client_socket)  
                     # Waiting variable set to True, to keep looping while waiting for the right ack-packet
                     waiting = True
-                    print('Received ack in wrong order, saved')
                     # Continue looping
                     continue    
 

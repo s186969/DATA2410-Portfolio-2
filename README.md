@@ -62,7 +62,7 @@ Stop and Wait (stop_and_wait):
 The sender sends a packet and waits for an acknowledgment (ACK). If an ACK is received, it sends a new packet. If an ACK does not arrive, it waits for a timeout and resends the packet.  
   
 Go-Back-N (gbn):  
-The sender implements the Go-Back-N strategy using a fixed window size of 5 packets. If no ACK packet is received within a given timeout, all packets that have not been acknowledged are assumed to be lost and retransmitted.  
+The sender implements the Go-Back-N strategy using a fixed window size of 3 packets. If no ACK packet is received within a given timeout, all packets that have not been acknowledged are assumed to be lost and retransmitted.  
   
 Selective Repeat (sr):  
 Combines both Go-Back-N and Selective Repeat to optimize performance. In this method, packets that arrive out of order are placed in the correct position in the receive buffer, rather than being discarded.  

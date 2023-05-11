@@ -1,3 +1,12 @@
+# Description:
+# Imports the necessary libraries
+# header: This module contains the functions for creating and reading the header.
+# client: This module contains the client functions.
+# server: This module contains the server functions.
+# drtp: This module contains the drtp layer functions.
+# argparse: This module makes it easy to write user-friendly command-line interfaces.
+# sys: This module provides access to some variables used or maintained by the Python interpreter and to functions that interact strongly with the interpreter.
+# ipaddress: This module provides factory functions to conveniently create IP addresses and networks of different types.
 from header import *
 from client import *
 from server import *
@@ -6,10 +15,16 @@ import argparse
 import sys
 import ipaddress
 
-# This function will parse the command-line arguments and perform basic error checking
+# Description:
+# This function will parse the command-line arguments
+# Arguments:
+# None
+# Returns:
+# args: The parsed command-line arguments
 def parse_args():
     # Defines and parses the command-line argument
     parser = argparse.ArgumentParser(description = 'Reliable Data Transfer Protocol Application')
+    
     # '-s' flag: Enables the server mode
     parser.add_argument('-s', '--server', action = 'store_true', help = "Enables server mode")
 
@@ -46,7 +61,11 @@ def parse_args():
     # Returns the parsed command-line arguments
     return args
 
-# This function will validate the arguments from above
+# Description:
+# This function will validate the command-line arguments
+# Arguments:
+# args: The parsed command-line arguments
+# Returns: None
 def validate_args(args):
     # Checks if both '-s' flag and '-c' flag are enabled at the same time
     if args.server and args.client:

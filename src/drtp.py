@@ -1,3 +1,13 @@
+# Description:
+# Imports the necessary libraries
+# client: This module contains the client functions.
+# server: This module contains the server functions.
+# header: This module contains the functions for creating and reading the header.
+# application: This module contains the application layer functions.
+# time: This module provides various time-related functions.
+# sys: This module provides access to some variables used or maintained by the interpreter and to functions that interact strongly with the interpreter.
+# os: This module provides a portable way of using operating system dependent functionality.
+
 from client import *
 from server import *
 from header import *
@@ -6,8 +16,11 @@ import time
 import sys
 import os
 
-
-# Three way handshake
+# Description:
+# This function implements the client-side of the three-way handshake process. The client initiates the handshake by sending a SYN packet, and then waits for a SYN-ACK packet from the server. Upon receiving the SYN-ACK, the client sends an ACK packet to complete the handshake process.
+# Arguments: 
+# client_socket: The socket object for the client.
+# Returns: None
 def handshake_client(client_socket):
     # Client starts by sending SYN
     SYN_packet = create_packet(0, 0, 8, 64000, b'')
@@ -31,15 +44,23 @@ def handshake_client(client_socket):
                 client_socket.send(ACK_packet)
                 
                 print('The client has received a SYN ACK. Ending the handshake from their end by sending an ACK to the server')
-
                 return
+            
     # If the client didn't receive a SYN ACK, it closes the connection.
     except:
+        # Print error message
         print('Did not receive SYN ACK: Connection timeout')
         client_socket.close()
         sys.exit()
 
-
+# Description:
+# This function implements the server-side of the three-way handshake process. The server checks if it has received a SYN packet from the client. If it has, the server sends a SYN-ACK packet in response. The server then waits for an ACK packet from the client. If it receives the ACK, the handshake is considered complete, and the server is ready to receive data.
+# Arguments: 
+# flags: The flags value from the received packet's header.
+# server_socket: The socket object for the server to send and receive data.
+# address: The address of the client.
+# Returns:
+# bool: True if the handshake is complete, otherwise False.
 def handshake_server(flags, server_socket, address):
     # Check if we have received SYN flag from the client
     if flags == 8:
@@ -66,16 +87,28 @@ def handshake_server(flags, server_socket, address):
         # If the server doesn't receive an ACK from the client, it will close.
         except:
             return False
-            print('Did not receive ACK from client. Server closing.')
-            server_socket.close()
-            sys.exit
 
+# Description:
+# This function reads the header from a given data packet and extracts the sequence number, acknowledgment number, and flags from it using the parse_header() function.
+# Arguments: 
+# data: The data packet to read the header from.
+# Returns:
+# seq: The sequence number from the header.
+# ack: The acknowledgment number from the header.
+# flags: The flags value from the header.
 def read_header(data):
+    # Extracting the header from the data
     header_from_data = data[:12]
+    # Extracting the sequence number, acknowledgment number, and flags from the header
     seq, ack, flags, win = parse_header (header_from_data)
     return seq, ack, flags
 
-# This function handles the finishing part of the client
+
+# Description:
+# This function closes the client-side connection by sending a FIN packet and waiting for an ACK packet in response. If no response is received within the specified timeout, the FIN packet is resent. Once the ACK packet is received, the client socket is closed gracefully.
+# Arguments: 
+# client_socket: The socket object for the client to send and receive data.
+# Returns: None
 def close_client(client_socket):
     # Creates a FIN packet
     FIN_packet = create_packet(0, 0, 2, 64000, b'')
@@ -100,7 +133,7 @@ def close_client(client_socket):
 
             # Breaking the loop if it is an ACK packet
             if flags == 4:
-                print(f'A winner is you. Du har mottatt en ACK')
+                print(f'A winner is you. You have received an ACK')
 
                 # Exiting the loop
                 break
@@ -109,14 +142,20 @@ def close_client(client_socket):
             # Resending the FIN packet to the client
             client_socket.send(FIN_packet)
 
-    # Closes the socket connection with the client
+    # # Gracefully close when the transfer is finished
     client_socket.close()
     print(f'Closing client gracefully')
 
     # Exiting the prosess
     sys.exit()
 
-# Gracefully close when the transfer is finished
+
+# Description:
+# This function closes the server-side connection by sending an ACK packet in response to the client's FIN packet. After sending the ACK packet, the server socket is closed gracefully.
+# Arguments: 
+# server_socket: The socket object for the server to send and receive data.
+# address: The address of the client.
+# Returns: None
 def close_server(server_socket, address):
     # Creating a ACK packet
     ACK_packet = create_packet(0, 0, 4, 64000, b'')

@@ -1,14 +1,32 @@
+# Description:
+# Imports the necessary libraries
+# socket: This module provides low-level networking interface.
+# application: This module contains the application layer functions.
+# drtp: This module contains the drtp layer functions.
+# header: This module contains the functions for creating and reading the header.
+# time: This module provides various time-related functions.
 from socket import *
 from application import *
 from drtp import *
 from header import *
 import time
 
-
+# Description:
+# This function appends the received data payload to received_data buffer.
+# Arguments: 
+# data (bytes): The received data, including the header.
+# received_data (bytes): The buffer storing previously received data.
+# Returns: 
+# received_data: The updated received_data buffer containing the newly received data payload.
 def receive_data(data, received_data):
     received_data += data[12:]
     return received_data
 
+# Description:
+# This function starts the server, listens for incoming connections, and handles the connection with the appropriate reliable data transfer method based on the command line arguments.
+# Arguments: 
+# args: Parsed command line arguments containing the server IP, port, and reliable data transfer method.
+# Returns: None
 def start_server(args):
     # Defining the IP address using the '-i' flag
     ip_address = args.serverip
@@ -25,12 +43,11 @@ def start_server(args):
         # Prints a message that the server is ready to receive
         print(f"The server is ready to receive")
 
-        # if args.reliablemethod == 'sw':
-        #    send_and_wait_server()
         while True:
             # Receiving header from a client
             data, address = server_socket.recvfrom(1472)
 
+            # Extracting the header from the received data
             header_from_data = data[:12]
             seq, ack, flags, win = parse_header(header_from_data)
 
@@ -40,13 +57,12 @@ def start_server(args):
                 server_socket.sendto(data, address)
 
                 # Continues to the next iteration of the while loop
-                continue
-
-            # seq, ack, flags = read_header(data)
-            # Hente ut og lese av header
-
+                continue          
+            
+            # Perform handshake with the client and establish a connection
             handshake = handshake_server(flags, server_socket, address)
 
+            # If the handshake is successful, the server will continue to the next step
             if handshake:
                 print('Connection established')
             else:
@@ -54,17 +70,25 @@ def start_server(args):
                 server_socket.close()
                 sys.exit()
 
+            # If the reliable data transfer method is 'stop-and-wait', the server will use the stop_and_wait function
             if args.reliablemethod == 'saw':
-                print('sender nå til saw')
+                print('Sending to Stop-and-Wait')
                 stop_and_wait(server_socket, args)
+            # If the reliable data transfer method is 'go-back-N', the server will use the go_back_N_server function
             elif args.reliablemethod == 'gbn':
-                print('sender nå til gbn')
+                print('Sending to Go-Back-N')
                 go_back_N_server(server_socket, args)
+            # If the reliable data transfer method is 'selective-repeat', the server will use the sel_rep_server function
             elif args.reliablemethod == 'sr':
-                print('sender nå til sr')
+                print('Sending to Selective Repeat')
                 sel_rep_server(server_socket, args)
 
-
+# Description:
+# This function implements the Stop-and-Wait reliable data transfer method for the server. It receives data from the client and sends an acknowledgement for each received packet.
+# Arguments: 
+# server_socket: The socket object for the server to receive and send data.
+# args: Parsed command line arguments containing the test case.
+# Returns: None
 def stop_and_wait(server_socket, args):
     received_data = b''
 
@@ -88,14 +112,14 @@ def stop_and_wait(server_socket, args):
 
         # Test case skip ack: The server ommits sending ack, so client has to resend
         if args.testcase == 'skip_ack' and seq == 4:
-            print('Ack for seq 4 blir nå skippet')
+            print('Ack for seq 4 is being skipped')
             args.testcase = None
             print(f'args.testcase = {args.testcase}')
             continue
 
         if flags == 2:
             # Check if the packet received contains a FIN flag
-            print('Mottatt FIN flagg fra clienten, mottar ikke mer data')
+            print('Received FIN flag from the client, not receiving more data')
             # Write to the file when FIN flag is received
             with open('received_image.jpg', 'wb') as f:
                 f.write(received_data)
@@ -127,7 +151,12 @@ def stop_and_wait(server_socket, args):
             # Sending the ack-packet to the client.
             server_socket.sendto(ACK_packet, address)
 
-# Stores packets that arrive in sequence. Sends an ack back to the client for each package that arrived in order
+# Description:
+# This function implements the Go-Back-N reliable data transfer method for the server. It receives data from the client and sends acknowledgements for the packets received in order.
+# Arguments: 
+# server_socket: The socket object for the server to receive and send data.
+# args: Parsed command line arguments containing the test case.
+# Returns: None
 def go_back_N_server(server_socket, args):
     #Variable to store received data in bytes
     received_data = b''
@@ -140,12 +169,11 @@ def go_back_N_server(server_socket, args):
     while True:
         # Receiving a message from a client
         data, address = server_socket.recvfrom(1472)
-
         # Extract header from packet
         header_from_data = data[:12]
         # Read sequence number and flags from header
         seq, ack, flags, win = parse_header(header_from_data)
-        print(f'Pakke: {seq} received')
+        print(f'Packet: {seq} received')
 
         # Accumulated values of bytes for calculating throughput 
         total_bytes_received = total_bytes_received + len(data)
@@ -202,6 +230,12 @@ def go_back_N_server(server_socket, args):
             print(f'Packet {seq} received in the wrong order')
             continue
 
+# Description:
+# This function implements the Selective Repeat reliable data transfer method for the server.It receives data from the client and sends acknowledgements for the packets received. It also handles out-of-order packets by buffering them and processing them in the correct order.
+# Arguments: 
+# server_socket: The socket object for the server to receive and send data.
+# args: Parsed command line arguments containing the test case.
+# Returns: None
 def sel_rep_server(server_socket, args):
     # Initialize an empty array called 'buffer' to hold packets that arrive out of order.
     buffer = {}

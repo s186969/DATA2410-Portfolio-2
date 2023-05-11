@@ -2,12 +2,12 @@ from socket import *
 from application import *
 from drtp import *
 from header import *
+import time
 
 
 def receive_data(data, received_data):
     received_data += data[12:]
     return received_data
-
 
 def start_server(args):
     # Defining the IP address using the '-i' flag
@@ -70,6 +70,10 @@ def start_server(args):
 
 def stop_and_wait(server_socket, args):
     received_data = b''
+
+    # Starting value of the received bytes for calculating throughput
+    total_bytes_received = 0
+
     while True:
         # Receiving a message from a client
         tuple = server_socket.recvfrom(1472)
@@ -80,6 +84,13 @@ def stop_and_wait(server_socket, args):
         header_from_data = data[:12]
         seq, ack, flags, win = parse_header(header_from_data)
         # seq, ack, flags = read_header(data)
+
+        # Accumulated values of bytes for calculating throughput 
+        total_bytes_received = total_bytes_received + len(data)
+
+        if seq == 1:
+            # Starting time in seconds for calculating throughput
+            starting_time = time.time()
 
         # Test case skip ack: The server ommits sending ack, so client has to resend
         if args.testcase == 'skip_ack' and seq == 4:
@@ -94,6 +105,19 @@ def stop_and_wait(server_socket, args):
             # Når FIN flagg er mottatt skriver vi dataen til filen.
             with open('received_image.jpg', 'wb') as f:
                 f.write(received_data)
+            
+            # Ending time for calculating throughput
+            ending_time = time.time()
+
+            # Duration of the transfer for calculating throughput
+            duration_time = ending_time - starting_time
+
+            # Calculation of the throughput
+            throughput = (total_bytes_received * 8e-6) / duration_time
+
+            print(f'Total bytes received: {total_bytes_received} bytes')
+            print(f'Duration: {duration_time:.2f} s')
+            print(f'Throughput: {throughput:.2f} Mbps')
 
             # Closing the connection gracefully
             close_server(server_socket, address)
@@ -116,6 +140,9 @@ def go_back_N_server(server_socket, args):
     #Variable to keep track of sequence number of last packet received
     seq_last_packet = 0
 
+    # Starting value of the received bytes for calculating throughput
+    total_bytes_received = 0
+
     while True:
         # Receiving a message from a client
         data, address = server_socket.recvfrom(1472)
@@ -126,6 +153,13 @@ def go_back_N_server(server_socket, args):
         seq, ack, flags, win = parse_header(header_from_data)
         print(f'Pakke: {seq} received')
 
+        # Accumulated values of bytes for calculating throughput 
+        total_bytes_received = total_bytes_received + len(data)
+
+        if seq == 1:
+            # Starting time in seconds for calculating throughput
+            starting_time = time.time()
+
         # Check if flag is 2 (FIN flag enabled)
         if flags == 2:
             print('Received FIN flag from client')
@@ -135,6 +169,19 @@ def go_back_N_server(server_socket, args):
             # When the FIN flag is received, we write the received bytes to the file.
             with open('received_image.jpg', 'wb') as f:
                 f.write(received_data)
+
+            # Ending time for calculating throughput
+            ending_time = time.time()
+
+            # Duration of the transfer for calculating throughput
+            duration_time = ending_time - starting_time
+
+            # Calculation of the throughput
+            throughput = (total_bytes_received * 8e-6) / duration_time
+
+            print(f'Total bytes received: {total_bytes_received} bytes')
+            print(f'Duration: {duration_time:.2f} s')
+            print(f'Throughput: {throughput:.2f} Mbps')
 
             # Closing the connection gracefully
             close_server(server_socket, address)
@@ -169,6 +216,9 @@ def sel_rep_server(server_socket, args):
     # Initialize a variable 'seq_last_packet' to hold the sequence number of the last received packet.
     seq_last_packet = 0
 
+    # Starting value of the received bytes for calculating throughput
+    total_bytes_received = 0
+
     # Start an infinite loop to receive packets from the client.
     while True:
         # Receive data and address from client through server_socket
@@ -180,6 +230,13 @@ def sel_rep_server(server_socket, args):
         # Print information about the packet
         print(f'Packet: {seq} received')
 
+        # Accumulated values of bytes for calculating throughput 
+        total_bytes_received = total_bytes_received + len(data)
+
+        if seq == 1:
+            # Starting time in seconds for calculating throughput
+            starting_time = time.time()
+
         # Check if the received packet has the FIN flag set (flags == 2).
         if flags == 2:
             # Print out information that the FIN flag has been received 
@@ -189,6 +246,21 @@ def sel_rep_server(server_socket, args):
             # Write received data to file 'received_image.jpg'.
             with open('received_image.jpg', 'wb') as f:
                 f.write(received_data)
+
+
+            # Ending time for calculating throughput
+            ending_time = time.time()
+
+            # Duration of the transfer for calculating throughput
+            duration_time = ending_time - starting_time
+
+            # Calculation of the throughput
+            throughput = (total_bytes_received * 8e-6) / duration_time
+
+            print(f'Total bytes received: {total_bytes_received} bytes')
+            print(f'Duration: {duration_time:.2f} s')
+            print(f'Throughput: {throughput:.2f} Mbps')
+
             #Close server
             close_server(server_socket, address)
             

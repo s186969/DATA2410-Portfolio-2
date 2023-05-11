@@ -249,7 +249,7 @@ def go_back_N(client_socket, file_name, args):
                     data = create_and_send_datapacket(image_data, seq_client, client_socket)
 
                     # Start RTT for retransmission
-                    start_round_trip_time = time.time()
+                    start_round_trip_time_retransmission = time.time()
 
                     # Print sender Window
                     array_as_string = " ".join(str(element) for element in sender_window)
@@ -289,10 +289,10 @@ def go_back_N(client_socket, file_name, args):
                     print(f'Sender window: {array_as_string}')
 
                     # End time RTT
-                    end_round_trip_time = time.time()
+                    end_round_trip_time_retransmission = time.time()
 
                     if args.bonus:
-                        round_trip_time = 4 * (end_round_trip_time - start_round_trip_time)
+                        round_trip_time = 4 * (end_round_trip_time_retransmission - start_round_trip_time_retransmission)
                         
                     continue
 

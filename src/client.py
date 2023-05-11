@@ -279,12 +279,6 @@ def go_back_N(client_socket, file_name, args):
                 #Read acknowledgement number from packet header
                 seq, ack, flags = read_header(receive)
                 print(f'Received acnowledgement number: {ack}')
-
-                # End time RTT
-                end_round_trip_time = time.time()
-
-                if args.bonus:
-                    round_trip_time = 4 * (end_round_trip_time - start_round_trip_time)
                 
                 # Check if the acknowledgement number is in the sender window
                 if ack in sender_window:
@@ -293,6 +287,13 @@ def go_back_N(client_socket, file_name, args):
                     #Print updated sender window
                     array_as_string = " ".join(str(element) for element in sender_window)
                     print(f'Sender window: {array_as_string}')
+
+                    # End time RTT
+                    end_round_trip_time = time.time()
+
+                    if args.bonus:
+                        round_trip_time = 4 * (end_round_trip_time - start_round_trip_time)
+                        
                     continue
 
             except:

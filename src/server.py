@@ -156,66 +156,72 @@ def go_back_N_server(server_socket, args):
             continue
 
 def sel_rep_server(server_socket, args):
-    # Initialiserer en tom ordbok (dictionary) kalt 'buffer' for å holde pakker som kommer i feil rekkefølge.
+    # Initialize an empty array called 'buffer' to hold packets that arrive out of order.
     buffer = {}
-    # Initialiserer en tom byte-streng kalt 'received_data' for å holde den mottatte dataen.
+    # Initialize an empty byte string called 'received_data' to hold the received data.
     received_data = b''
-    # Initialiserer en variabel 'seq_last_packet' for å holde sekvensnummeret til den sist mottatte pakken.
+    # Initialize a variable 'seq_last_packet' to hold the sequence number of the last received packet.
     seq_last_packet = 0
 
-    # Starter en evig løkke for å motta pakker fra klienten.
+    # Start an infinite loop to receive packets from the client.
     while True:
-        # Mottar data og adresse fra klienten ved hjelp av server_socket.
+        # Receive data and address from client through server_socket
         data, address = server_socket.recvfrom(1472)
-        # Henter headerinformasjonen fra den mottatte dataen.
+        # Get header information from packet
         header_from_data = data[:12]
-        # Parser headerinformasjonen for å hente sekvensnummeret, ACK-nummeret, flaggene og vindusstørrelsen.
+        # Parse the header information to retrieve the sequence number, ACK number, flags, and window size
         seq, ack, flags, win = parse_header(header_from_data)
-        # Skriver ut informasjon om den mottatte pakken.
-        print(f'Pakke: {seq}, flagget: {flags}, størrelse: {len(data)}')
+        # Print information about the packet
+        print(f'Packet: {seq} received')
 
-        # Sjekker om mottatt pakke har FIN-flagget satt (flags == 2).
+        # Check if the received packet has the FIN flag set (flags == 2).
         if flags == 2:
-            # Skriver ut informasjon om at FIN-flagget er mottatt og ingen flere data vil bli mottatt.
-            print('Mottatt FIN flagg fra clienten, mottar ikke mer data')
-            # Skriver ut lengden på den mottatte dataen.
-            print(f'Received data er: {len(received_data)}')
-            # Skriver den mottatte dataen til en fil kalt 'received_image.jpg'.
+            # Print out information that the FIN flag has been received 
+            print('Received FIN flag')
+            # Print size of received data 
+            print(f'Received data: {len(received_data)}')
+            # Write received data to file 'received_image.jpg'.
             with open('received_image.jpg', 'wb') as f:
                 f.write(received_data)
+            #Close server
             close_server(server_socket, address)
-            # Avslutter evig løkke og avslutter funksjonen.
-            # break
             
-
-        # Sjekker om sekvensnummeret til den mottatte pakken er en mer enn sekvensnummeret til den sist mottatte pakken.
+        # Check if the sequence number of the received packet is one more than the sequence number of the last received packet.
         if seq == seq_last_packet + 1:
-            # Håndterer et testcase hvor serveren skal hoppe over å sende en ACK for pakke med sekvensnummer 42.
+            # Handle a test case where the server should skip sending an ACK for the packet with sequence number 4.
             if args.testcase == 'skip_ack' and seq == 4:
-                print('Sender ikke ack')
+                print('Does not send ack')
+                # Disable testcase so that packet 4 can be saved 
                 args.testcase = None
             else:
-                # Oppretter en ACK-pakke for den mottatte pakken og sender den til klienten.
+                # Create ack-packet for the packet received
                 ACK_packet = create_packet(0, seq, 0, 64000, b'')
+                # Send ack-packet to client
                 server_socket.sendto(ACK_packet, address)
-                print(f'Sender ack: {seq}')
-                # Legger til data fra den mottatte pakken i 'received_data'.
+                print(f'Sending ack: {seq}')
+                # Saving received data in the variable 'received_data'.
                 received_data = receive_data(data, received_data)
-                # Oppdaterer sekvensnummeret til den sist mottatte pakken.
+                # Update seq number of last received packet
                 seq_last_packet = seq
-                # Hvis det er pakker i bufferet med sekvensnummeret en mer enn den sist mottatte pakken, behandles de og fjernes fra bufferet
-                array_as_string = " ".join(str(element) for element in buffer)
-                print(f'Buffer: {array_as_string}')
+                # Print buffer when not empty
+                if len(buffer) > 0:
+                    array_as_string = " ".join(str(element) for element in buffer)
+                    print(f'\nBuffer: {array_as_string}\n')
+                # If there are packets in the buffer with sequence numbers greater than the last received packet, handle and remove them from the buffer.
                 while seq_last_packet + 1 in buffer:
+                    # Update seq number of last received packet
                     seq_last_packet += 1
+                    # Update amount of received data
                     received_data = receive_data(buffer[seq_last_packet], received_data)
+                    # Delete element from buffer
                     del buffer[seq_last_packet]
-                array_as_string = " ".join(str(element) for element in buffer)
-                print(f'Buffer: {array_as_string}')
                     
-        # Hvis den mottatte pakken har et annet sekvensnummer enn 0 og ikke er en etter den sist mottatte pakken, lagres den i bufferet og en ACK sendes til klienten.
+        # Packet not received in order, saved to buffer and sending ack
         elif seq != 0:
-            print('Pakken kom i feil rekkefølge, lagrer i buffer og sender ack')
+            print('Packet not in order, save in buffer and sending ack')
+            #Adding data to buffer
             buffer[seq] = data
+            # Create ack packet
             ACK_packet = create_packet(0, seq, 0, 64000, b'')
+            # Send ack packet
             server_socket.sendto(ACK_packet, address)

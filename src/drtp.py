@@ -80,7 +80,7 @@ def close_client(client_socket):
 
     # Sending the FIN packet to the client
     client_socket.send(FIN_packet)
-    print('Nå har clienten sendt FIN - sending ferdig')
+    print('Client sent FIN - sending over')
 
     # Sets a timeout
     client_socket.settimeout(0.5)
@@ -88,7 +88,7 @@ def close_client(client_socket):
     # While waiting for the response
     while True:
         try:
-            print("Venter på pakke 'FIN sin' ACK")
+            print("Waiting for 'FIN' to be ACKed")
             
             # Receiving the response packet
             data, address = client_socket.recvfrom(1472)
@@ -109,7 +109,7 @@ def close_client(client_socket):
 
     # Closes the socket connection with the client
     client_socket.close()
-    print(f'Avslutter klienten grasiøst')
+    print(f'Closing client gracefully')
 
     # Exiting the prosess
     sys.exit()
@@ -120,11 +120,11 @@ def close_server(server_socket, address):
 
     # Sending the ACK packet back to the client
     server_socket.sendto(ACK_packet, address)
-    print(f'Sender ACK til klient.')
+    print(f'Sending ACK to client.')
 
     # Closes the socket connection with the server
     server_socket.close()
-    print(f'Avslutter serveren grasiøst')
+    print(f'Closing serveren gracefully')
 
     # Exiting the prosess
     sys.exit()

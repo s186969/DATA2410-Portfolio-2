@@ -92,7 +92,7 @@ def validate_args(args):
 
     # Checks if 'Stop and wait' and test case 'loss' are enabled at the same time
     if args.testcase == "loss" and args.reliablemethod == "saw":
-        sys.exit("Error: Stop and wait cannot be run with test case 'skip_ack'")
+        sys.exit("Error: Stop and wait cannot be run with test case 'loss'")
 
     # Checks if the value for the '-w' flag is between 2 and 15
     if args.windowsize < 2 or args.windowsize > 15:

@@ -54,12 +54,6 @@ def stop_and_wait(client_socket, file_name, args):
     with open(file_name, 'rb') as f:
         image_data = f.read()
 
-    # The total value of bytes sent for calculating throughput
-    total_bytes_sent = 0 
-
-    # Starting time for calculating throughput in seconds
-    starting_time = time.time()
-
     round_trip_time = 0.5
 
     # Så lenge vi ikke har sendt hele bildet, fortsetter vi å sende
@@ -72,8 +66,11 @@ def stop_and_wait(client_socket, file_name, args):
         # Bruker metode fra header.py til å lage pakke med header og data
         packet = create_packet(seq_client, ack_client, 0, 64000, data)
 
-        # Adding the bytes for each sent packet for calculating throughput 
-        total_bytes_sent = total_bytes_sent + len(data)
+        if args.testcase == 'loss' and seq_client == 4:
+            print('Seq 4 blir nå skippet')
+            testcase = None
+            print(f'args.testcase = {testcase}')
+            continue
 
         # Start time duration RTT
         start_round_trip_time = time.time()
@@ -110,29 +107,16 @@ def stop_and_wait(client_socket, file_name, args):
                     seq_client += 1
             else:
                 continue
-        # In case the handshake ACK is not received, the client has 5 attempts to resend it. If not, it will close.
         except:
             if seq_client == 1:
+                print("Mottok ikke ack for den første!!!")
                 print(f'Attempts: {attempts}')
-                attempts += 1
+                attempts = attempts + 1
                 if attempts >= 5:
-                    print("We have made 5 attempts to send the handshake ACK. Closing the client.")
+                    print("Nå har vi gjort 5 forsøk, og alle blir tapt, så græisfull avslutning")
                     client_socket.close()
                     sys.exit()
             # Pakken må sendes på nytt
-
-    # Ending time for calculating throughput
-    ending_time = time.time()
-
-    # Duration of the transfer for calculating throughput
-    duration_time = ending_time - starting_time
-
-    # Throughput of the transfer
-    throughput = (total_bytes_sent * 8e-6) / duration_time
-
-    print(f'Total bytes: {total_bytes_sent} bytes')
-    print(f'Duration: {duration_time:.2f} s')
-    print(f'Throughput: {throughput:.2f} Mbps')
 
     # Closes the connection gracefully
     close_client(client_socket)
@@ -144,7 +128,6 @@ def create_and_send_datapacket(image_data, seq_client, client_socket):
     image_data_start = number_of_data_sent
     image_data_stop = image_data_start + 1460
     data = image_data[image_data_start: image_data_stop]
-
 
     # Create new packet 
     packet = create_packet(seq_client,0,0,64000,data)
@@ -172,12 +155,6 @@ def go_back_N(client_socket, file_name, args):
     # Reads the picture and converts it to bytes
     with open(file_name, 'rb') as f:
         image_data = f.read()
-
-    # The total value of bytes sent for calculating throughput
-    total_bytes_sent = 0 
-
-    # Starting time for calculating throughput
-    starting_time = time.time()
 
     round_trip_time = 0.5
 
@@ -207,9 +184,6 @@ def go_back_N(client_socket, file_name, args):
 
             # Hente ut riktig område av data
             data = create_and_send_datapacket(image_data, seq_client, client_socket)
-
-            # Adding the bytes for each sent packet for calculating throughput 
-            total_bytes_sent = total_bytes_sent + len(data)
 
             # Increase amount of data sent
             number_of_data_sent += 1460
@@ -277,9 +251,6 @@ def go_back_N(client_socket, file_name, args):
                     # Start RTT for retransmission
                     start_round_trip_time = time.time()
 
-                    # Adding the bytes for each sent packet for calculating throughput 
-                    total_bytes_sent = total_bytes_sent + len(data)
-
                     # Print sender Window
                     array_as_string = " ".join(str(element) for element in sender_window)
                     print(f'Sender window: {array_as_string}')
@@ -295,7 +266,7 @@ def go_back_N(client_socket, file_name, args):
         if ending == True:
             # Exiting the outer loop
             break
-        '''
+
         #Receive the rest of the acknowledgement numbers after sending is over
         while len(sender_window) > 0 and number_of_data_sent >= len(image_data):
             #Wait this amount of time
@@ -333,20 +304,6 @@ def go_back_N(client_socket, file_name, args):
                 # Update number of data sent
                 number_of_data_sent = 1460 * last_ack
                 continue
-            '''
-
-    # Ending time for calculating throughput
-    ending_time = time.time()
-
-    # Duration of the transfer for calculating throughput
-    duration_time = ending_time - starting_time
-
-    # Throughput of the transfer
-    throughput = (total_bytes_sent * 8e-6) / duration_time
-
-    print(f'Total bytes: {total_bytes_sent} bytes')
-    print(f'Duration: {duration_time:.2f} s')
-    print(f'Throughput: {throughput:.2f} Mbps')
 
     # Closes the connection gracefully
     close_client(client_socket)
@@ -373,17 +330,13 @@ def sel_rep(client_socket, file_name, testcase, window_size):
     with open(file_name, 'rb') as f:
         image_data = f.read()
 
-    # The total value of bytes sent for calculating throughput
-    total_bytes_sent = 0 
-
-    # Starting time for calculating throughput
-    starting_time = time.time()
-
     # Enter while-loop to keep sending packets when the window is not full, or to wait for ack, or to wait for ack after retransmit 
     while len(sender_window) < window_size or waiting == True or retransmission == True:
         if ending == True:
         # Exiting the outer loop
-            print('\nEnding transfer \n')
+            print('Ending')
+            break
+        if number_of_data_sent >= len(image_data):
             break
 
         # Check if there is space in the sender window to send a new packet
@@ -391,7 +344,7 @@ def sel_rep(client_socket, file_name, testcase, window_size):
         while (number_of_data_sent < len(image_data) and len(sender_window) < window_size) or retransmission:
             # When testcase loss is enabled and sequence number is 3
             if testcase == 'loss' and seq_client == 3:
-                print('\nSeq 3 is now dropped\n')
+                print('\nSeq 3 blir nå skippet\n')
                 # The packet is added to the sender window to simulate that it has been sent
                 sender_window.append(seq_client)
                 # Disable testcase so that packet 3 can retransmit
@@ -399,7 +352,12 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                 # Increase sequence number to continue sending
                 seq_client += 1
                 # Increase number of bytes sent, since we simulate that  it has been sent
+                
                 number_of_data_sent += 1460
+
+                # Break out of the inner loop when the window is full
+                if len(sender_window) >= window_size:
+                    break
             
             # Increase amount of data sent for eack new packet
             if not retransmission:
@@ -408,10 +366,7 @@ def sel_rep(client_socket, file_name, testcase, window_size):
             # Create and send a datapacket using this function
             data = create_and_send_datapacket(image_data, seq_client, client_socket)
 
-            # Adding the bytes for each sent packet for calculating throughput 
-            total_bytes_sent = total_bytes_sent + len(data)
-
-            # Add package number in sender window as long as its not retransmission
+            # Add package number in sender window 
             if not retransmission:
                 sender_window.append(seq_client)
 
@@ -430,7 +385,7 @@ def sel_rep(client_socket, file_name, testcase, window_size):
             else:
                 retransmission = False
             
-            # If waiting was True, need to set it back to False
+            # Kan vi ta denne bort?
             waiting = False
 
         # Clear i-variable for next use of while-loop
@@ -488,9 +443,6 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                 # Retransmit lost packet
                 data = create_and_send_datapacket(image_data, seq_client, client_socket)
 
-                # Adding the bytes for each sent packet for calculating throughput 
-                total_bytes_sent = total_bytes_sent + len(data)
-
                 # Print sender window
                 array_as_string = " ".join(str(element) for element in sender_window)
                 print(f'Sender window: {array_as_string}')
@@ -501,6 +453,13 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                
                 # The rest of the window is alredy acked, can now continue
                 seq_client += window_size
+
+        # Kan vi ta bort denne?
+        # If the sender window is empty, the function has exited the inner loop
+        if ending == True:
+            # Exiting the outer loop
+            print('Ending true')
+            break
     
         #Receive the rest of the acknowledgement numbers after sending is over
         while len(sender_window) > 0 and number_of_data_sent >= len(image_data):
@@ -523,6 +482,8 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                     sender_window.clear()
                     ack_array.clear()
                     ending = True
+                    #last_ack += window_size
+                    #retransmission = False
 
                 # Check if the acknowledgement number is in the sender window and check if the ack number is as expected    
                 elif ack in sender_window and ack == last_ack +1:
@@ -535,18 +496,18 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                     #Ack in window, but in the wrong order. Saving in ack_array. 
                     ack_array.append(ack)
                     print('Received ack in wrong order, saved')
-                    # The packet after last ack is lost, resend first time we receive wrong ack
+                    # The packet after last ack is lost, resend
                     if len(ack_array) == 0:
                         seq_client = last_ack + 1
-                        # Retransmit the lost packet
                         data = create_and_send_datapacket(image_data, seq_client, client_socket)  
-                    
-                    # Print ack array
+                    # Waiting variable set to True, to keep looping while waiting for the right ack-packet
+                    print(f'Number of data sent: {number_of_data_sent}')
                     array_as_string = " ".join(str(element) for element in ack_array)
                     print(f'Ack_array: {array_as_string}\n')
-                   
-                    # Waiting variable set to True, to keep looping while waiting for the right ack-packet
-                    waiting = True 
+                    print(f'Bildedata: {len(image_data)}')
+                    waiting = True
+                    # Continue looping
+                    #continue    
 
             except:
                 print('Something went wrong receiving ack')
@@ -559,19 +520,7 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                 # Retransmission is set to True and used in while-loop to send all packets in window again
                 retransmission = True
                 continue
-            
-    # Ending time for calculating throughput
-    ending_time = time.time()
-
-    # Duration of the transfer for calculating throughput
-    duration_time = ending_time - starting_time
-
-    # Throughput of the transfer
-    throughput = (total_bytes_sent * 8e-6) / duration_time
-
-    print(f'Total bytes: {total_bytes_sent} bytes')
-    print(f'Duration: {duration_time:.2f} s')
-    print(f'Throughput: {throughput:.2f} Mbps')
 
     # Closes the connection gracefully
+    print('Close_Client kalles')
     close_client(client_socket)

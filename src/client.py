@@ -156,8 +156,6 @@ def go_back_N(client_socket, file_name, args):
     with open(file_name, 'rb') as f:
         image_data = f.read()
 
-    round_trip_time = 0.5
-
     # Keep sending packets when the window is not full
     while len(sender_window) < args.windowsize or retransmission == True:
    
@@ -179,9 +177,6 @@ def go_back_N(client_socket, file_name, args):
                 if len(sender_window) >= args.windowsize:
                     break
 
-            # Start RTT
-            start_round_trip_time = time.time()
-
             # Hente ut riktig område av data
             data = create_and_send_datapacket(image_data, seq_client, client_socket)
 
@@ -201,20 +196,13 @@ def go_back_N(client_socket, file_name, args):
         # Receive acknowledgment from the server as long as there are packets in the sender window
         if len(sender_window) > 0:
             # Wait for acknowledgement during this timeout
-            client_socket.settimeout(round_trip_time)
-            print(f'Timeout is set to {round_trip_time} s')
+            client_socket.settimeout(0.5)
             try:
                 # Receive packet
                 receive = client_socket.recv(1472)
                 # Read acknowledge number from packet header
                 seq, ack, flags = read_header(receive)
                 print(f'\nReceived ack number: {ack}')
-
-                # End time RTT
-                end_round_trip_time = time.time()
-
-                if args.bonus:
-                    round_trip_time = 4 * (end_round_trip_time - start_round_trip_time)
 
                 # Check whether the ack number is in the sender_window:
                 if ack in sender_window:
@@ -245,8 +233,6 @@ def go_back_N(client_socket, file_name, args):
                 seq_client = last_ack + 1
                 print('Retransmit packets in sender window')
 
-                start_round_trip_time = time.time()
-
                 for packet in sender_window:
                     # Create and send datapacket
                     data = create_and_send_datapacket(image_data, seq_client, client_socket)
@@ -270,8 +256,7 @@ def go_back_N(client_socket, file_name, args):
         #Receive the rest of the acknowledgement numbers after sending is over
         while len(sender_window) > 0 and number_of_data_sent >= len(image_data):
             #Wait this amount of time
-            client_socket.settimeout(round_trip_time)
-            print(f'Timeout is set to {round_trip_time} s i den andre')
+            client_socket.settimeout(0.5)
 
             try:
                 #Receive packet from server
@@ -284,12 +269,6 @@ def go_back_N(client_socket, file_name, args):
                 if ack in sender_window:
                     # Remove from sender window if received ack
                     sender_window.remove(ack)
-
-                    # End time RTT
-                    end_round_trip_time = time.time()
-
-                    if args.bonus:
-                        round_trip_time = 4 * (end_round_trip_time - start_round_trip_time)
 
                     if len(sender_window) == 0:
                         ending = True
@@ -330,9 +309,7 @@ def sel_rep(client_socket, file_name, testcase, window_size, bonus):
     retransmission = False
     # Initializes an array to save the ack received in wrong order
     ack_array = []
-
-    round_trip_time = 0.5
-    
+  
     # Reads the picture and converts it to bytes
     with open(file_name, 'rb') as f:
         image_data = f.read()
@@ -370,9 +347,6 @@ def sel_rep(client_socket, file_name, testcase, window_size, bonus):
             if not retransmission:
                 number_of_data_sent += 1460
 
-            # Start RTT
-            start_round_trip_time = time.time()
-
             # Create and send a datapacket using this function
             data = create_and_send_datapacket(image_data, seq_client, client_socket)
 
@@ -404,8 +378,7 @@ def sel_rep(client_socket, file_name, testcase, window_size, bonus):
         # Receive acknowledgment from the server as long as there are packets in the sender window
         if len(sender_window) > 0 and number_of_data_sent < len(image_data):
             # Wait for acknowledgement during this timeout
-            client_socket.settimeout(round_trip_time)
-            print(f'Timeout is set to {round_trip_time} s')
+            client_socket.settimeout(0.5)
 
             try:
                 # Receive packet
@@ -413,12 +386,6 @@ def sel_rep(client_socket, file_name, testcase, window_size, bonus):
                 # Read acknowledge number from packet header
                 seq, ack, flags = read_header(receive)
                 print(f'\nReceived ack number: {ack}')
-
-                # End time RTT
-                end_round_trip_time = time.time()
-
-                if bonus:
-                    round_trip_time = 4 * (end_round_trip_time - start_round_trip_time)
                 
                 # If ack is equal to first seq in window and the ack_array contains ack for the rest of the packets in window,
                 # we know that all packets in window is received  
@@ -482,8 +449,7 @@ def sel_rep(client_socket, file_name, testcase, window_size, bonus):
         #Receive the rest of the acknowledgement numbers after sending is over
         while len(sender_window) > 0 and number_of_data_sent >= len(image_data):
             #Wait this amount of time
-            client_socket.settimeout(round_trip_time)
-            print(f'Timeout is set to {round_trip_time} s i den andre')
+            client_socket.settimeout(0.5)
 
             try:
                 #Receive packet from server

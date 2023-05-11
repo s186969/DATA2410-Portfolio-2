@@ -64,6 +64,7 @@ def handshake_server(flags, server_socket, address):
                     server_socket.settimeout(None)
                     return True
         except:
+            return False
             print('Did not receive ACK from client. Server closing.')
             server_socket.close()
             sys.exit

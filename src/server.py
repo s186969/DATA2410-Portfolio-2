@@ -48,8 +48,14 @@ def start_server(args):
             # seq, ack, flags = read_header(data)
             # Hente ut og lese av header
 
-            handshake_server(flags, server_socket, address)
-            print('Connection established')
+            handshake = handshake_server(flags, server_socket, address)
+
+            if handshake:
+                print('Connection established')
+            else:
+                print('Did not receive ACK from client. Server closing')
+                server_socket.close()
+                sys.exit()
 
             if args.reliablemethod == 'saw':
                 print('sender nå til saw')

@@ -110,13 +110,13 @@ def stop_and_wait(client_socket, file_name, args):
                     seq_client += 1
             else:
                 continue
+        # In case the handshake ACK is not received, the client has 5 attempts to resend it. If not, it will close.
         except:
             if seq_client == 1:
-                print("Mottok ikke ack for den første!!!")
                 print(f'Attempts: {attempts}')
-                attempts = attempts + 1
+                attempts += 1
                 if attempts >= 5:
-                    print("Nå har vi gjort 5 forsøk, og alle blir tapt, så græisfull avslutning")
+                    print("We have made 5 attempts to send the handshake ACK. Closing the client.")
                     client_socket.close()
                     sys.exit()
             # Pakken må sendes på nytt

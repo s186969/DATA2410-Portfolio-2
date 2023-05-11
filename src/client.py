@@ -7,7 +7,6 @@ import sys
 
 # Starte en klient
 
-
 def start_client(args):
     # Defining the IP address using the '-i' flag
     ip_address = args.serverip
@@ -22,19 +21,12 @@ def start_client(args):
     client_socket = socket(AF_INET, SOCK_DGRAM)
     client_socket.connect((ip_address, port_number))
 
-    # Calculating four times round-trip time
-    four_round_trip_time = 4 * round_trip_time(client_socket, args.debug)
-    print(f'4RTT: {four_round_trip_time} s')
-
     # Establish reliable connection with handshake
-    handshake_client(client_socket, args.debug)
-
-    seq = 1
-    ack = 0
+    handshake_client(client_socket)
 
     # Sende data ved å bruke stop and wait
     if args.reliablemethod == 'saw':
-        stop_and_wait(client_socket, file_name, seq, ack, args.testcase)
+        stop_and_wait(client_socket, file_name, args.testcase)
 
     # Sende data ved å bruke Go back N
     elif args.reliablemethod == 'gbn':
@@ -49,7 +41,10 @@ def start_client(args):
         send_data(client_socket, file_name)
 
 
-def stop_and_wait(client_socket, file_name, seq_client, ack_client, testcase):
+def stop_and_wait(client_socket, file_name, testcase):
+    seq_client = 1
+    ack_client = 0
+
     # Holde kontroll på data sendt
     number_of_data_sent = 0
 

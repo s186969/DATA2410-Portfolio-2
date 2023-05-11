@@ -26,11 +26,11 @@ def start_client(args):
 
     # Sende data ved å bruke stop and wait
     if args.reliablemethod == 'saw':
-        stop_and_wait(client_socket, file_name, args.testcase)
+        stop_and_wait(client_socket, file_name, args)
 
     # Sende data ved å bruke Go back N
     elif args.reliablemethod == 'gbn':
-        go_back_N(client_socket, file_name, args.testcase, args.windowsize)
+        go_back_N(client_socket, file_name, args)
 
     # Sende data ved å bruke Selective Repeat
     elif args.reliablemethod == 'sr':
@@ -41,7 +41,7 @@ def start_client(args):
         send_data(client_socket, file_name)
 
 
-def stop_and_wait(client_socket, file_name, testcase):
+def stop_and_wait(client_socket, file_name, args):
     seq_client = 1
     ack_client = 0
 
@@ -57,8 +57,10 @@ def stop_and_wait(client_socket, file_name, testcase):
     # The total value of bytes sent for calculating throughput
     total_bytes_sent = 0 
 
-    # Starting time for calculating throughput
+    # Starting time for calculating throughput in seconds
     starting_time = time.time()
+
+    round_trip_time = 0.5
 
     # Så lenge vi ikke har sendt hele bildet, fortsetter vi å sende
     while number_of_data_sent < len(image_data):
@@ -70,7 +72,7 @@ def stop_and_wait(client_socket, file_name, testcase):
         # Bruker metode fra header.py til å lage pakke med header og data
         packet = create_packet(seq_client, ack_client, 0, 64000, data)
 
-        if testcase == 'loss' and seq_client == 4:
+        if args.testcase == 'loss' and seq_client == 4:
             print('Seq 4 blir nå skippet')
             testcase = None
             print(f'args.testcase = {testcase}')
@@ -79,11 +81,15 @@ def stop_and_wait(client_socket, file_name, testcase):
         # Adding the bytes for each sent packet for calculating throughput 
         total_bytes_sent = total_bytes_sent + len(data)
 
+        # Start time duration RTT
+        start_round_trip_time = time.time()
+
         print(f'Sender pakke med seq: {seq_client}')
         client_socket.send(packet)
 
         # Venter på ack fra server
-        client_socket.settimeout(0.5)
+        client_socket.settimeout(round_trip_time)
+        print(f'Timeout is set to {round_trip_time} s')
 
         # Variabel for å sjekke om man har mottatt to akc på samme pakke
         dupack = 0
@@ -91,6 +97,14 @@ def stop_and_wait(client_socket, file_name, testcase):
             receive = client_socket.recv(1472)
             seq, ack, flags = read_header(receive)
             print(f'Mottatt pakke med ack: {ack}')
+
+            # End time duration RTT
+            end_round_trip_time = time.time()
+
+            # New RTT
+            if args.bonus:
+                round_trip_time = 4 * (end_round_trip_time - start_round_trip_time)
+
             if ack == seq_client:
                 dupack += 1
                 # Sjekke om mottatt to ack på samme pakke
@@ -149,7 +163,7 @@ def create_and_send_datapacket(image_data, seq_client, client_socket):
 #Function that sends n packets at the same time and then wait in m seconds for acknowledgement packet for sent each packet.
 # If an acknowledgement number is not received, this function retransmit all packets after 
 # last packet that we know was received by server
-def go_back_N(client_socket, file_name, testcase, window_size):
+def go_back_N(client_socket, file_name, args):
     # Initializes the sender window for data in transit
     sender_window = []
     # Initializes a variable that count data sent in bytes
@@ -171,26 +185,31 @@ def go_back_N(client_socket, file_name, testcase, window_size):
     # Starting time for calculating throughput
     starting_time = time.time()
 
+    round_trip_time = 0.5
+
     # Keep sending packets when the window is not full
-    while len(sender_window) < window_size or retransmission == True:
+    while len(sender_window) < args.windowsize or retransmission == True:
    
         # Check if there is space in the sender window to send a new packet
-        while number_of_data_sent < len(image_data) and len(sender_window) < window_size:
+        while number_of_data_sent < len(image_data) and len(sender_window) < args.windowsize:
             # When testcase loss is enabled and sequence number is 3
-            if testcase == 'loss' and seq_client == 3:
+            if args.testcase == 'loss' and seq_client == 3:
                 print('\nSeq 3 is now skipped\n')
                 # The packet is added to the sender window to simulate that it has been sent
                 sender_window.append(seq_client)
                 # Disable testcase so that packet 3 can retransmit
-                testcase = None
+                args.testcase = None
                 # Increase sequence number to continue sending
                 seq_client += 1
                  # Increase number of bytes sent, since we simulate that  it has been sent
                 number_of_data_sent += 1460
 
                 # Break out of the inner loop when the window is full
-                if len(sender_window) >= window_size:
+                if len(sender_window) >= args.windowsize:
                     break
+
+            # Start RTT
+            start_round_trip_time = time.time()
 
             # Hente ut riktig område av data
             data = create_and_send_datapacket(image_data, seq_client, client_socket)
@@ -205,7 +224,7 @@ def go_back_N(client_socket, file_name, testcase, window_size):
             sender_window.append(seq_client)
             # Print sender window
             array_as_string = " ".join(str(element) for element in sender_window)
-            if len(sender_window) == window_size:
+            if len(sender_window) == args.windowsize:
                 print(f'Sender window: {array_as_string}')
             # increase packet number
             seq_client += 1
@@ -214,14 +233,21 @@ def go_back_N(client_socket, file_name, testcase, window_size):
         # Receive acknowledgment from the server as long as there are packets in the sender window
         if len(sender_window) > 0:
             # Wait for acknowledgement during this timeout
-            client_socket.settimeout(0.5)
+            client_socket.settimeout(round_trip_time)
+            print(f'Timeout is set to {round_trip_time} s')
             try:
                 # Receive packet
                 receive = client_socket.recv(1472)
                 # Read acknowledge number from packet header
                 seq, ack, flags = read_header(receive)
                 print(f'\nReceived ack number: {ack}')
-                
+
+                # End time RTT
+                end_round_trip_time = time.time()
+
+                if args.bonus:
+                    round_trip_time = 4 * (end_round_trip_time - start_round_trip_time)
+
                 # Check whether the ack number is in the sender_window:
                 if ack in sender_window:
                     # Check if the ack number is as expected
@@ -254,6 +280,9 @@ def go_back_N(client_socket, file_name, testcase, window_size):
                     # Create and send datapacket
                     data = create_and_send_datapacket(image_data, seq_client, client_socket)
 
+                    # Start RTT for retransmission
+                    start_round_trip_time = time.time()
+
                     # Adding the bytes for each sent packet for calculating throughput 
                     total_bytes_sent = total_bytes_sent + len(data)
 
@@ -276,13 +305,21 @@ def go_back_N(client_socket, file_name, testcase, window_size):
         #Receive the rest of the acknowledgement numbers after sending is over
         while len(sender_window) > 0 and number_of_data_sent >= len(image_data):
             #Wait this amount of time
-            client_socket.settimeout(0.5)
+            client_socket.settimeout(round_trip_time)
+            print(f'Timeout is set to {round_trip_time} s i den andre')
+
             try:
                 #Receive packet from server
                 receive = client_socket.recv(1472)
                 #Read acknowledgement number from packet header
                 seq, ack, flags = read_header(receive)
                 print(f'Received acnowledgement number: {ack}')
+
+                # End time RTT
+                end_round_trip_time = time.time()
+
+                if args.bonus:
+                    round_trip_time = 4 * (end_round_trip_time - start_round_trip_time)
                 
                 # Check if the acknowledgement number is in the sender window
                 if ack in sender_window:

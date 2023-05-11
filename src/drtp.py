@@ -9,18 +9,11 @@ import os
 # TO DO: Sjekke at ACK kommer frem, legg inn en timer
 
 # Three way handshake
-def handshake_client(client_socket, debug):
-    if debug:
-        print(f'+' * os.get_terminal_size().columns)
-        print(f"Initiating the function 'handshake_client()'")
-        print(f'+' * os.get_terminal_size().columns)
-
+def handshake_client(client_socket):
     # Client starter med å sende SYN
     SYN_packet = create_packet(0, 0, 8, 64000, b'')
     client_socket.send(SYN_packet)
-
-    if debug:
-        print('The client initiates the handshake by sending SYN')
+    print('The client initiates the handshake by sending SYN')
 
     client_socket.settimeout(0.5) # Sjekk om tiden skal være like lang her
     
@@ -37,12 +30,7 @@ def handshake_client(client_socket, debug):
                 ACK_packet = create_packet(0, 0, 4, 64000, b'')
                 client_socket.send(ACK_packet)
                 
-                if debug:
-                    print('The client has received a SYNACK. Ending the handshake from their end by sending an ACK to the server')
-
-                    print(f'=' * os.get_terminal_size().columns)
-                    print(f"Terminating the function 'handshake_client()'")
-                    print(f'=' * os.get_terminal_size().columns)
+                print('The client has received a SYNACK. Ending the handshake from their end by sending an ACK to the server')
 
                 return
             
@@ -52,7 +40,7 @@ def handshake_client(client_socket, debug):
         sys.exit()
 
 
-def handshake_server(flags, server_socket, address, debug):
+def handshake_server(flags, server_socket, address):
     # Sjekker om vi har mottatt SYN-flagg fra client
     if flags == 8:
         print('The server has received a SYN. Replying with a SYNACK')

@@ -33,6 +33,9 @@ def parse_args():
 
     # -'w' flag: Sets the window size for Go-Back-N and Selective-Repeat
     parser.add_argument('-w', '--windowsize', type = int, default = 3, help = "Selects a window size for Go-Back-N and Selective-Repeeat")
+
+    # '-b' flag: Sets the timeout to four times round-trip time
+    parser.add_argument('-b', '--bonus', action = 'store_true', help = "Selects the timeout to four times round-trip time")
     
     # Parsing the command-line arguments
     args = parser.parse_args()
@@ -75,13 +78,25 @@ def validate_args(args):
     if args.reliablemethod is not None and args.reliablemethod not in ["saw", "gbn", "sr"]:
         sys.exit("Error: Invalid value for '-r' flag. Format must be either saw, gbn or sr")
 
-    # Chekcs if the format for the '-t' flag is correct
+    # Checks if the format for the '-t' flag is correct
     if args.testcase is not None and args.testcase not in ["skip_ack", "loss"]:
         sys.exit("Error: Invalid value for '-t' flag. Format must be either skip_ack or loss")
 
-    # Checks if the value for the '-w' flag is between 1 and 15
-    if args.windowsize < 1 or args.windowsize > 15:
-        sys.exit("Error: Invalid value for '-w' flag. The window size must be a integer between 1 and 15")
+    # Checks if server mode and test case 'loss' are enabled at the same time
+    if args.testcase == "loss" and args.server:
+        sys.exit("Error: Test case 'loss' cannot be run in server mode")
+
+    # Checks if client mode and test case 'skip_ack' are enabled at the same time
+    if args.testcase == "skip_ack" and args.client:
+        sys.exit("Error: Test case 'skip_ack' cannot be run in client mode")
+
+    # Checks if 'Stop and wait' and test case 'loss' are enabled at the same time
+    if args.testcase == "loss" and args.reliablemethod == "saw":
+        sys.exit("Error: Stop and wait cannot be run with test case 'skip_ack'")
+
+    # Checks if the value for the '-w' flag is between 2 and 15
+    if args.windowsize < 2 or args.windowsize > 15:
+        sys.exit("Error: Invalid value for '-w' flag. The window size must be a integer between 2 and 15")
               
 # This is the main entry point of the program
 if __name__ == '__main__':

@@ -48,7 +48,7 @@ def start_server(args):
             # seq, ack, flags = read_header(data)
             # Hente ut og lese av header
 
-            handshake_server(flags, server_socket, address, args.debug)
+            handshake_server(flags, server_socket, address)
             print('Connection established')
 
             if args.reliablemethod == 'saw':
@@ -76,8 +76,8 @@ def stop_and_wait(server_socket, args):
         # seq, ack, flags = read_header(data)
 
         # Test case skip ack: The server ommits sending ack, so client has to resend
-        if args.testcase == 'skip_ack' and seq == 2:
-            print('Ack for seq 2 blir nå skippet')
+        if args.testcase == 'skip_ack' and seq == 4:
+            print('Ack for seq 4 blir nå skippet')
             args.testcase = None
             print(f'args.testcase = {args.testcase}')
             continue

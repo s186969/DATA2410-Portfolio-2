@@ -29,10 +29,7 @@ def start_server(args):
         #    send_and_wait_server()
         while True:
             # Receiving header from a client
-            # data, address = server_socket.recvfrom(1472) # Forslag til å erstatte de tre linjene under
-            tuple = server_socket.recvfrom(1472)
-            data = tuple[0]
-            address = tuple[1]
+            data, address = server_socket.recvfrom(1472)
 
             header_from_data = data[:12]
             seq, ack, flags, win = parse_header(header_from_data)
@@ -76,9 +73,7 @@ def stop_and_wait(server_socket, args):
 
     while True:
         # Receiving a message from a client
-        tuple = server_socket.recvfrom(1472)
-        data = tuple[0]
-        address = tuple[1]
+        data, address = server_socket.recvfrom(1472)
 
         # Extract header from packet
         header_from_data = data[:12]

@@ -245,9 +245,6 @@ def go_back_N(client_socket, file_name, args):
                 seq_client = last_ack + 1
                 print('Retransmit packets in sender window')
 
-                # Start RTT for retransmission
-                start_round_trip_time_retransmission = time.time()
-
                 for packet in sender_window:
                     # Create and send datapacket
                     data = create_and_send_datapacket(image_data, seq_client, client_socket)
@@ -288,12 +285,6 @@ def go_back_N(client_socket, file_name, args):
                     #Print updated sender window
                     array_as_string = " ".join(str(element) for element in sender_window)
                     print(f'Sender window: {array_as_string}')
-
-                    # End time RTT
-                    end_round_trip_time_retransmission = time.time()
-
-                    if args.bonus:
-                        round_trip_time = 4 * (end_round_trip_time_retransmission - start_round_trip_time_retransmission)
                         
                     continue
 

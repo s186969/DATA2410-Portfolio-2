@@ -6,34 +6,34 @@ import time
 import sys
 import os
 
-# TO DO: Sjekke at ACK kommer frem, legg inn en timer
 
 # Three way handshake
 def handshake_client(client_socket):
-    # Client starter med å sende SYN
+    # Client starts by sending SYN
     SYN_packet = create_packet(0, 0, 8, 64000, b'')
     client_socket.send(SYN_packet)
     print('The client initiates the handshake by sending SYN')
 
-    client_socket.settimeout(0.5) # Sjekk om tiden skal være like lang her
+    # Set a timeout
+    client_socket.settimeout(0.5)
     
     try: 
-        # Client mottar data fra server
+        # Client receives data from the server
         data = client_socket.recvfrom(1472)[0]
         
         while data:
-            # Sjekke pakkens header
+            # Check the packet's header
             seq, ack, flags = read_header(data)
 
-            # Hvis header har aktivert SYN-ACK flagg
+            # If the header has activated the SYN-ACK flag, the client sends the last part of the handshake: The ACK
             if flags == 12:
                 ACK_packet = create_packet(0, 0, 4, 64000, b'')
                 client_socket.send(ACK_packet)
                 
-                print('The client has received a SYNACK. Ending the handshake from their end by sending an ACK to the server')
+                print('The client has received a SYN ACK. Ending the handshake from their end by sending an ACK to the server')
 
                 return
-            
+    # If the client didn't receive a SYN ACK, it closes the connection.
     except:
         print('Did not receive SYN ACK: Connection timeout')
         client_socket.close()
@@ -41,16 +41,16 @@ def handshake_client(client_socket):
 
 
 def handshake_server(flags, server_socket, address):
-    # Sjekker om vi har mottatt SYN-flagg fra client
+    # Check if we have received SYN flag from the client
     if flags == 8:
         print('The server has received a SYN. Replying with a SYNACK')
 
-        # Lager en SYN ACK pakke
+        # Creating a SYN ACK packet
         SYN_ACK_packet = create_packet(0, 0, 12, 64000, b'')
         server_socket.sendto(SYN_ACK_packet, address)
 
         server_socket.settimeout(0.5)
-
+        # Receive and exctract data from the client
         try:
             data = server_socket.recvfrom(1472)[0]
             if data:
@@ -59,10 +59,11 @@ def handshake_server(flags, server_socket, address):
                 seq, ack, flags, win = parse_header(header_from_data)
 
                 if flags == 4:
-                    # Server mottar ACK fra klient og er da klar for å motta datapakker
+                    # The server receives an ACK from the client and is ready to receive the data
                     print('The server received an ACK from client. Handshake complete')
                     server_socket.settimeout(None)
                     return True
+        # If the server doesn't receive an ACK from the client, it will close.
         except:
             return False
             print('Did not receive ACK from client. Server closing.')
@@ -115,6 +116,7 @@ def close_client(client_socket):
     # Exiting the prosess
     sys.exit()
 
+# Gracefully close when the transfer is finished
 def close_server(server_socket, address):
     # Creating a ACK packet
     ACK_packet = create_packet(0, 0, 4, 64000, b'')
@@ -125,14 +127,7 @@ def close_server(server_socket, address):
 
     # Closes the socket connection with the server
     server_socket.close()
-    print(f'Closing serveren gracefully')
+    print(f'Closing the server gracefully')
 
     # Exiting the prosess
     sys.exit()
-
-# Gracefully close when the transfer is finished
-    # Sender sends FIN-packet. Receiver sends an ACK når FIN er received.
-    # Etter at receiver har sendt ACK så lukkes connection.
-
-
-# Construct the packets and acknowledgements

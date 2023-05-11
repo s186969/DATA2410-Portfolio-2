@@ -80,10 +80,9 @@ def stop_and_wait(server_socket, args):
         data = tuple[0]
         address = tuple[1]
 
-        # Hente ut og lese av header
+        # Extract header from packet
         header_from_data = data[:12]
         seq, ack, flags, win = parse_header(header_from_data)
-        # seq, ack, flags = read_header(data)
 
         # Accumulated values of bytes for calculating throughput 
         total_bytes_received = total_bytes_received + len(data)
@@ -100,9 +99,9 @@ def stop_and_wait(server_socket, args):
             continue
 
         if flags == 2:
-            # Sjekke om pakken som er mottatt inneholder FIN-flagg
+            # Check if the packet received contains a FIN flag
             print('Mottatt FIN flagg fra clienten, mottar ikke mer data')
-            # Når FIN flagg er mottatt skriver vi dataen til filen.
+            # Write to the file when FIN flag is received
             with open('received_image.jpg', 'wb') as f:
                 f.write(received_data)
             
@@ -122,15 +121,15 @@ def stop_and_wait(server_socket, args):
             # Closing the connection gracefully
             close_server(server_socket, address)
 
-        # Hvis seq er større enn null har vi mottatt en datapakke
+        # If seq is greater than zero, we have received a data packet.
         elif seq > 0:
-            # Lagrer mottatt data i variabelen received_data vha funksjonen receive data
+            # Storing received data in the variable received_data using the function receive_data.
             received_data = receive_data(data, received_data)
 
-            # Oppretter en tilhørende ack-pakke ved å sette ack til å være seq
+            # Creating a corresponding ack-packet by setting ack to be seq.
             ACK_packet = create_packet(0, seq, 0, 64000, b'')
 
-            # Sender ack-pakken til client
+            # Sending the ack-packet to the client.
             server_socket.sendto(ACK_packet, address)
 
 # Stores packets that arrive in sequence. Sends an ack back to the client for each package that arrived in order

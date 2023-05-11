@@ -34,7 +34,7 @@ def start_client(args):
 
     # Sende data ved å bruke Selective Repeat
     elif args.reliablemethod == 'sr':
-        sel_rep(client_socket, file_name, args.testcase, args.windowsize, args.bonus)
+        sel_rep(client_socket, file_name, args.testcase, args.windowsize)
 
     # Denne kan vi nok ta bort når vi er ferdige
     else:
@@ -292,7 +292,7 @@ def go_back_N(client_socket, file_name, args):
     # Closes the connection gracefully
     close_client(client_socket)
 
-def sel_rep(client_socket, file_name, testcase, window_size, bonus):
+def sel_rep(client_socket, file_name, testcase, window_size):
     # Initializes the sender window for data in transit
     sender_window = []
     # Initializes a variable that count data sent in bytes

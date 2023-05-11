@@ -509,8 +509,9 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                 if ack == sender_window[0] and len(ack_array) > 0:
                     sender_window.clear()
                     ack_array.clear()
-                    last_ack += window_size
-                    retransmission = False
+                    ending = True
+                    #last_ack += window_size
+                    #retransmission = False
 
                 # Check if the acknowledgement number is in the sender window and check if the ack number is as expected    
                 elif ack in sender_window and ack == last_ack +1:
@@ -524,20 +525,26 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                     ack_array.append(ack)
                     print('Received ack in wrong order, saved')
                     # The packet after last ack is lost, resend
-                    seq_client = last_ack + 1
-                    data = create_and_send_datapacket(image_data, seq_client, client_socket)  
+                    if len(ack_array) == 0:
+                        seq_client = last_ack + 1
+                        data = create_and_send_datapacket(image_data, seq_client, client_socket)  
                     # Waiting variable set to True, to keep looping while waiting for the right ack-packet
+                    print(f'Number of data sent: {number_of_data_sent}')
+                    array_as_string = " ".join(str(element) for element in ack_array)
+                    print(f'Ack_array: {array_as_string}\n')
+                    print(f'Bildedata: {len(image_data)}')
                     waiting = True
                     # Continue looping
-                    continue    
+                    #continue    
 
             except:
                 print('Something went wrong receiving ack')
                 #If we do not receive ack from the server, this indicates packet loss. Packages from this point on must be resent
                 #Sends the package after the previous one that we know has arrived
                 seq_client = last_ack + 1
+                data = create_and_send_datapacket(image_data, seq_client, client_socket)
                 # Update number of data sent
-                number_of_data_sent = 1460 * last_ack
+                #number_of_data_sent = 1460 * last_ack
                 # Retransmission is set to True and used in while-loop to send all packets in window again
                 retransmission = True
                 continue

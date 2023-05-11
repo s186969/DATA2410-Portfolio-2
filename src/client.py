@@ -72,12 +72,6 @@ def stop_and_wait(client_socket, file_name, args):
         # Bruker metode fra header.py til å lage pakke med header og data
         packet = create_packet(seq_client, ack_client, 0, 64000, data)
 
-        if args.testcase == 'loss' and seq_client == 4:
-            print('Seq 4 blir nå skippet')
-            testcase = None
-            print(f'args.testcase = {testcase}')
-            continue
-
         # Adding the bytes for each sent packet for calculating throughput 
         total_bytes_sent = total_bytes_sent + len(data)
 

@@ -43,7 +43,7 @@ def start_client(args):
 
     # Send data using Selective Repeat
     elif args.reliablemethod == 'sr':
-        sel_rep(client_socket, file_name, args.testcase, args.windowsize)
+        sel_rep(client_socket, file_name, args.testcase, args.windowsize, args.bonus)
     
     # If no reliable method is chosen, the program will print an error message and exit
     else:
@@ -364,7 +364,7 @@ def go_back_N(client_socket, file_name, args):
 # testcase: The testcase to be used
 # window_size: The size of the window to be used
 # Returns: None
-def sel_rep(client_socket, file_name, testcase, window_size):
+def sel_rep(client_socket, file_name, testcase, window_size, bonus):
     # Initializes the sender window for data in transit
     sender_window = []
     # Initializes a variable that count data sent in bytes
@@ -385,6 +385,11 @@ def sel_rep(client_socket, file_name, testcase, window_size):
     # Reads the picture and converts it to bytes
     with open(file_name, 'rb') as f:
         image_data = f.read()
+
+    # Initial round-trip time value
+    round_trip_time = 0.5
+
+    start_round_trip_time = {}
 
     # Enter while-loop to keep sending packets when the window is not full, or to wait for ack, or to wait for ack after retransmit 
     while len(sender_window) < window_size or waiting == True or retransmission == True: 
@@ -421,6 +426,9 @@ def sel_rep(client_socket, file_name, testcase, window_size):
             # Create and send a datapacket using this function
             data = create_and_send_datapacket(image_data, seq_client, client_socket)
 
+            # Start time duration RTT
+            start_round_trip_time[seq_client] = time.time()
+
             # Add package number in sender window 
             if not retransmission:
                 sender_window.append(seq_client)
@@ -449,7 +457,8 @@ def sel_rep(client_socket, file_name, testcase, window_size):
         # Receive acknowledgment from the server as long as there are packets in the sender window
         if len(sender_window) > 0 and number_of_data_sent < len(image_data):
             # Wait for acknowledgement during this timeout
-            client_socket.settimeout(0.5)
+            client_socket.settimeout(round_trip_time)
+            print(f'Timeout is set to {round_trip_time} s')
 
             try:
                 # Receive packet
@@ -472,6 +481,11 @@ def sel_rep(client_socket, file_name, testcase, window_size):
                     
                 # Check whether the ack number is in the sender_window:
                 if ack in sender_window:
+                    if bonus:
+                        print(f'RTT for packet {ack}: {time.time() - start_round_trip_time[ack]} s')
+                        round_trip_time = 4 * (time.time() - start_round_trip_time[ack])
+
+
                     # Check if the ack number is as expected
                     if ack == last_ack + 1:
                         # Update last_ack variable

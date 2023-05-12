@@ -114,12 +114,9 @@ def stop_and_wait(client_socket, file_name, args):
             # Print the received ACK to the user
             print(f'Mottatt pakke med ack: {ack}')
 
-            # End time duration for RTT measurement
-            end_round_trip_time = time.time()
-
             # Update RTT if 'bonus' argument is set
             if args.bonus:
-                round_trip_time = 4 * (end_round_trip_time - start_round_trip_time)
+                round_trip_time = 4 * (time.time() - start_round_trip_time)
 
             # Check if received ACK matches the sequence number
             if ack == seq_client:
@@ -197,6 +194,9 @@ def go_back_N(client_socket, file_name, args):
     with open(file_name, 'rb') as f:
         image_data = f.read()
 
+    # Initial round-trip time value
+    round_trip_time = 0.5
+
     # Keep sending packets when the window is not full or when retransmission is needed
     while len(sender_window) < args.windowsize or retransmission == True:
         # Check if there is space in the sender window to send a new packet and if there is data left to send
@@ -206,18 +206,25 @@ def go_back_N(client_socket, file_name, args):
                 print('\nSeq 3 is now skipped\n')
                 # The packet is added to the sender window to simulate that it has been sent
                 sender_window.append(seq_client)
+
                 # Disable testcase so that packet 3 can retransmit
                 args.testcase = None
+
                 # Increase sequence number to continue sending
                 seq_client += 1
+
                  # Increase number of bytes sent, since we simulate that  it has been sent
                 number_of_data_sent += 1460
+                
                 # Break out of the inner loop when the window is full
                 if len(sender_window) >= args.windowsize:
                     break
 
             # Create and send a data packet
             data = create_and_send_datapacket(image_data, seq_client, client_socket)
+
+            # Start time duration RTT
+            start_round_trip_time = time.time()
 
             # Increase amount of data sent
             number_of_data_sent += 1460
@@ -236,7 +243,9 @@ def go_back_N(client_socket, file_name, args):
         # Receive acknowledgment from the server as long as there are packets in the sender window
         if len(sender_window) > 0:
             # Wait for acknowledgement during this timeout
-            client_socket.settimeout(0.5)
+            client_socket.settimeout(round_trip_time)
+            print(f'Timeout is set to {round_trip_time} s')
+
             try:
                 # Receive packet
                 receive = client_socket.recv(1472)
@@ -248,6 +257,11 @@ def go_back_N(client_socket, file_name, args):
                 if ack in sender_window:
                     # Check if the ack number is as expected
                     if ack == last_ack + 1:
+
+                        # Update RTT if 'bonus' argument is set
+                        if args.bonus:
+                            round_trip_time = 4 * (time.time() - start_round_trip_time)
+
                         # Update last_ack variable
                         last_ack = ack  
                         # Remove this ack number from the sender_window
@@ -296,6 +310,7 @@ def go_back_N(client_socket, file_name, args):
         while len(sender_window) > 0 and number_of_data_sent >= len(image_data):
             #Wait this amount of time
             client_socket.settimeout(0.5)
+            print(f'Timeout is set to 0.5 s')
 
             try:
                 # Receive packet from server

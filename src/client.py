@@ -197,6 +197,8 @@ def go_back_N(client_socket, file_name, args):
     # Initial round-trip time value
     round_trip_time = 0.5
 
+    start_round_trip_time = {}
+
     # Keep sending packets when the window is not full or when retransmission is needed
     while len(sender_window) < args.windowsize or retransmission == True:
         # Check if there is space in the sender window to send a new packet and if there is data left to send
@@ -224,7 +226,7 @@ def go_back_N(client_socket, file_name, args):
             data = create_and_send_datapacket(image_data, seq_client, client_socket)
 
             # Start time duration RTT
-            start_round_trip_time = time.time()
+            start_round_trip_time[seq_client] = time.time()
 
             # Increase amount of data sent
             number_of_data_sent += 1460
@@ -260,7 +262,8 @@ def go_back_N(client_socket, file_name, args):
 
                         # Update RTT if 'bonus' argument is set
                         if args.bonus:
-                            round_trip_time = 4 * (time.time() - start_round_trip_time)
+                            round_trip_time = 4 * (time.time() - start_round_trip_time[ack])
+                            print(f'RTT for packet {ack}: {time.time() - start_round_trip_time[ack]} s')
 
                         # Update last_ack variable
                         last_ack = ack  

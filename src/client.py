@@ -292,6 +292,9 @@ def go_back_N(client_socket, file_name, args):
                     # Create and send datapacket
                     data = create_and_send_datapacket(image_data, seq_client, client_socket)
 
+                    # Start time duration RTT
+                    start_round_trip_time[seq_client] = time.time()
+
                     # Print sender Window
                     array_as_string = " ".join(str(element) for element in sender_window)
                     # Print sender window
@@ -326,6 +329,11 @@ def go_back_N(client_socket, file_name, args):
                 if ack in sender_window:
                     # Remove from sender window if received ack
                     sender_window.remove(ack)
+
+                    # Update RTT if 'bonus' argument is set
+                    if args.bonus:
+                        round_trip_time = 4 * (time.time() - start_round_trip_time[ack])
+                        print(f'RTT for packet {ack}: {time.time() - start_round_trip_time[ack]} s')
 
                     if len(sender_window) == 0:
                         ending = True

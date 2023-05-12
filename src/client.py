@@ -315,8 +315,8 @@ def go_back_N(client_socket, file_name, args):
         # Receive the rest of the acknowledgement numbers after sending is over
         while len(sender_window) > 0 and number_of_data_sent >= len(image_data):
             #Wait this amount of time
-            client_socket.settimeout(0.5)
-            print(f'Timeout is set to 0.5 s')
+            client_socket.settimeout(round_trip_time)
+            print(f'Timeout is set to {round_trip_time} s')
 
             try:
                 # Receive packet from server
@@ -332,8 +332,8 @@ def go_back_N(client_socket, file_name, args):
 
                     # Update RTT if 'bonus' argument is set
                     if args.bonus:
-                        round_trip_time = 4 * (time.time() - start_round_trip_time[ack])
                         print(f'RTT for packet {ack}: {time.time() - start_round_trip_time[ack]} s')
+                        round_trip_time = 4 * (time.time() - start_round_trip_time[ack])
 
                     if len(sender_window) == 0:
                         ending = True

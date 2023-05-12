@@ -481,13 +481,13 @@ def sel_rep(client_socket, file_name, testcase, window_size, bonus):
                     
                 # Check whether the ack number is in the sender_window:
                 if ack in sender_window:
-                    if bonus:
-                        print(f'RTT for packet {ack}: {time.time() - start_round_trip_time[ack]} s')
-                        round_trip_time = 4 * (time.time() - start_round_trip_time[ack])
-
 
                     # Check if the ack number is as expected
                     if ack == last_ack + 1:
+                        if bonus:
+                            print(f'RTT for packet {ack}: {time.time() - start_round_trip_time[ack]} s')
+                            round_trip_time = 4 * (time.time() - start_round_trip_time[ack])
+
                         # Update last_ack variable
                         last_ack = ack  
                         # Remove this ack number from the sender_window
@@ -515,6 +515,9 @@ def sel_rep(client_socket, file_name, testcase, window_size, bonus):
                 # Retransmit lost packet
                 data = create_and_send_datapacket(image_data, seq_client, client_socket)
 
+                # Start time duration RTT
+                start_round_trip_time[seq_client] = time.time()
+
                 # Print sender window
                 array_as_string = " ".join(str(element) for element in sender_window)
                 print(f'Sender window: {array_as_string}')
@@ -535,7 +538,8 @@ def sel_rep(client_socket, file_name, testcase, window_size, bonus):
         # Receive the rest of the acknowledgement numbers after sending is over
         while len(sender_window) > 0 and number_of_data_sent >= len(image_data):
             # Wait this amount of time
-            client_socket.settimeout(0.5)
+            client_socket.settimeout(round_trip_time)
+            print(f'Timeout is set to {round_trip_time} s')
 
             try:
                 # Receive packet from server
@@ -559,6 +563,10 @@ def sel_rep(client_socket, file_name, testcase, window_size, bonus):
 
                 # Check if the acknowledgement number is in the sender window and check if the ack number is as expected    
                 elif ack in sender_window and ack == last_ack +1:
+                    if bonus:
+                        print(f'RTT for packet {ack}: {time.time() - start_round_trip_time[ack]} s')
+                        round_trip_time = 4 * (time.time() - start_round_trip_time[ack])
+
                     # Update last_ack variable
                     last_ack = ack  
                     # Remove this ack number from the sender_window
@@ -571,7 +579,12 @@ def sel_rep(client_socket, file_name, testcase, window_size, bonus):
                     # The packet after last ack is lost, resend
                     if len(ack_array) == 0:
                         seq_client = last_ack + 1
-                        data = create_and_send_datapacket(image_data, seq_client, client_socket)  
+
+                        data = create_and_send_datapacket(image_data, seq_client, client_socket) 
+                        
+                        # Start time duration RTT
+                        start_round_trip_time[seq_client] = time.time() 
+
                     # Waiting variable set to True, to keep looping while waiting for the right ack-packet
                     print(f'Number of data sent: {number_of_data_sent}')
                     array_as_string = " ".join(str(element) for element in ack_array)
@@ -585,6 +598,10 @@ def sel_rep(client_socket, file_name, testcase, window_size, bonus):
                 #Sends the package after the previous one that we know has arrived
                 seq_client = last_ack + 1
                 data = create_and_send_datapacket(image_data, seq_client, client_socket)
+
+                # Start time duration RTT
+                start_round_trip_time[seq_client] = time.time()
+
                 # Retransmission is set to True and used in while-loop to send all packets in window again
                 retransmission = True
                 continue

@@ -1,5 +1,5 @@
 # DATA2410 Portfolio 2
-Reliable Transport Protocol (DRTP) is a simple file transfer application that is built on top of UDP. The main objective of this application is to transfer a JPG file to the destination where it will be named to *received_image.jpg*. The application consists of a client and a server that ensures reliable data transfer of files by establishing a connection using a three-way handshake. In addition, the application will utilise three reliable methods that a user can select to secure the transmission. Each packet in the transmission will consist of 1472 bytes, with 12 bytes of header and 1460 bytes of data. 
+DATA2410 Reliable Transport Protocol (DRTP) is a simple file transfer application that is built on top of UDP. The main objective of this application is to transfer a JPG file to the destination, where it will be renamed to *received_image.jpg*. The application consists of a client and a server that ensures reliable data transfer of files by establishing a connection using a three-way handshake. In addition, the application will utilise three reliable methods that a user can select to secure the transmission. Each packet in the transmission will consist of 1472 bytes, with 12 bytes of header and 1460 bytes of data. 
 
 ## Requirements  
 - Python 3.6 or higher

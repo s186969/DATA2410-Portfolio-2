@@ -56,9 +56,9 @@ python3 application.py -s -i <ip_address> -p <port_number> -r <reliable_method>
 
 To run the tool in client mode, use the -c flag:
 ```
-python3 application.py -c -i <ip_address> -p <port_number> -f <name_name> -r <reliable_method>
+python3 application.py -c -i <ip_address> -p <port_number> -r <reliable_method> -f <name_name>
 ```
-**NOTE** Both server and client MUST use the same reliable_method.
+**NOTE** Both server and client *MUST* use the same reliable_method.
 
 ### Reliable methods
 The application supports three reliable methods: Stop and Wait, Go-Back-N, and Selective Repeat.

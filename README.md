@@ -26,7 +26,7 @@ To run the application, you can use the following command-line arguments:
 -i, --serverip        Selects the IP address of server
 -p, --port            Selects port number
 -f, --filename        Selects the file to be transfered
--r, --reliablemethod  Specifies the reliability method to use (saw, gbn, sr) 
+-r, --reliablemethod  Specifies the reliable method to use (saw, gbn, sr) 
 -t, --testcase        Optional flag for testing purposes (skip_ack or loss)
 -w, --windowsize      Sets a window size for Go-Back-N and Selective Repeeat (2-15)
 -b, --bonus           Setting the timeout to four times round-trip time of former packet
@@ -58,7 +58,7 @@ To run the tool in client mode, use the -c flag:
 ```
 python3 application.py -c -i <ip_address> -p <port_number> -r <reliable_method> -f <name_name>
 ```
-**NOTE** Both server and client *MUST* use the same reliable_method.
+**NOTE:** Both server and client *MUST* use the same reliable_method.
 
 ### Reliable methods
 The application supports three reliable methods: Stop and Wait, Go-Back-N, and Selective Repeat.
@@ -77,13 +77,15 @@ This application also supports two test cases to trigger retransmission: skip_ac
 
 #### Skip_ack
 The test case simulates a scenario where the acknowledgement is lost during the transmission from the server, forcing the client to retransmit the packet.
+<br><br>**Note:** <code>skip_ack</code> can only be run in server mode.
 
 #### Loss
-The test case aims to simulate a situation where a client sends a specific packet to the server, but it is lost during the transmission. This will also trigger retransmission.  
+The test case aims to simulate a situation where a client sends a specific packet to the server, but it is lost during the transmission. This will also trigger retransmission.
+<br><br>**Note:** <code>loss</code> can only be run in client mode.
 
 ## Examples
 #### Stop and Wait
-To run the server on the local machine and listening on port number 8080 while using the method 'Stop and wait', input the following command:
+To run the server on the local machine and listening on port number 8080 while using the method *Stop and wait*, input the following command:
 ```
 python3 application.py -s -i 127.0.0.1 -p 8080 -r saw
 ```

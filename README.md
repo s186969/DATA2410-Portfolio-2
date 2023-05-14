@@ -85,7 +85,7 @@ The test case aims to simulate a situation where a client sends a specific packe
 
 ## Examples
 #### Stop and Wait
-To run the server on the local machine and listening on port number 8080 while using the method *Stop and wait*, input the following command:
+To run the server on the local machine and listening on port number 8080 while using the method *Stop and wait*, input the following command in the server side:
 ```
 python3 application.py -s -i 127.0.0.1 -p 8080 -r saw
 ```
@@ -96,29 +96,29 @@ python3 application.py -c -i 127.0.0.1 -p 8080 -r saw -f bergen.jpg
 ``` 
 
 #### Go-Back-N
-To use the method *Go-Back-N* with test case <code>skip_ack</code>, input the following command:
+To use the method *Go-Back-N* with test case <code>skip_ack</code> and window size 10, input the following command in the server side:
 ```
 python3 application.py -s -i 127.0.0.1 -p 8080 -r gbn -t skip_ack
 ``` 
 
 Use the following command on the client side:
 ```
-python3 application.py -c -i 127.0.0.1 -p 8080 -r gbn -f bergen.jpg
+python3 application.py -c -i 127.0.0.1 -p 8080 -r gbn -w 10 -f bergen.jpg
 ```
 
 #### Selective Repeat  
-To use the method *Selective Repeat* with test case <code>loss</code>, input the following command:
+To use the method *Selective Repeat* with test case <code>loss</code> and window size 15, input the following command in the server side:
 ```
 python3 application.py -s -i 127.0.0.1 -p 8080 -r sr
 ``` 
 
 Use the following command on the client side:
 ```
-python3 application.py -c -i 127.0.0.1 -p 8080 -r sr -t loss -f bergen.jpg
+python3 application.py -c -i 127.0.0.1 -p 8080 -r sr -t loss -w 15 -f bergen.jpg
 ```
 
 #### Round-trip time
-To use the round-trip time multiplied by four as the timeout in *Stop and Wait*, input the following command:
+To use the round-trip time multiplied by four as the timeout in *Stop and Wait*, input the following command in the server side:
 ```
 python3 application.py -s -i 127.0.0.1 -p 8080 -r saw
 ```
